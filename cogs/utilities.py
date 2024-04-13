@@ -1,14 +1,19 @@
-from discord.ext import commands
-import discord
-import aiohttp
-import json
-from datetime import datetime
 import os
-
+import json
+from discord.ext import commands, tasks
+import discord
+import datetime
+import aiohttp
+import re
+import humanize
+import asyncio
+from googletrans import Translator, LANGUAGES
 
 class Utilities(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.reminders = []
+
 
     @commands.command()
     async def cgloves(self, ctx, roblox_username: str):
@@ -65,6 +70,143 @@ class Utilities(commands.Cog):
                 await ctx.send(embed=embed)
             else:
                 await ctx.send("An error occurred while fetching the user's badges.")
+
+
+    @commands.command()
+    async def convert(self, ctx, value: float, unit_from: str, unit_to: str):
+        
+        length_factors = {'mm': 0.001, 'cm': 0.01, 'm': 1.0, 'km': 1000.0}
+        weight_factors = {'mg': 0.001, 'g': 1.0, 'kg': 1000.0, 't': 1000000.0}
+        volume_factors = {'ml': 0.001, 'l': 1.0, 'kl': 1000.0}
+        
+        temperature_factors = {
+            'C': {'F': lambda c: c * 9/5 + 32, 'K': lambda c: c + 273.15},
+            'F': {'C': lambda f: (f - 32) * 5/9, 'K': lambda f: (f - 32) * 5/9 + 273.15},
+            'K': {'C': lambda k: k - 273.15, 'F': lambda k: (k - 273.15) * 9/5 + 32}
+        }
+
+        if unit_from in length_factors and unit_to in length_factors:
+            converted_value = value * length_factors[unit_from] / length_factors[unit_to]
+            await ctx.send(f"{value} {unit_from} is {converted_value} {unit_to}.")
+        
+        elif unit_from in weight_factors and unit_to in weight_factors:
+            converted_value = value * weight_factors[unit_from] / weight_factors[unit_to]
+            await ctx.send(f"{value} {unit_from} is {converted_value} {unit_to}.")
+        
+        elif unit_from in volume_factors and unit_to in volume_factors:
+            converted_value = value * volume_factors[unit_from] / volume_factors[unit_to]
+            await ctx.send(f"{value} {unit_from} is {converted_value} {unit_to}.")
+        
+        elif unit_from in temperature_factors and unit_to in temperature_factors[unit_from]:
+            converted_value = temperature_factors[unit_from][unit_to](value)
+            await ctx.send(f"{value}°{unit_from} is {converted_value}°{unit_to}.")
+        
+        else:
+            await ctx.send("Invalid units or incompatible unit types. Please check your units and try again.")
+
+
+    @commands.command()
+    async def remind(self, ctx, duration, *, reason=None):
+        time = self.parse_duration(duration)
+        
+        if time is None:
+            await ctx.send("Invalid duration format. Use `1h`, `1m`, `1s`, or `1d`.")
+            return
+        
+        if reason is None:
+            reason = "No reason provided"
+
+        reminder = {
+            "user": ctx.author.id,
+            "channel": ctx.channel.id,
+            "reason": reason,
+            "end_time": ctx.message.created_at + time
+        }
+        
+        self.reminders.append(reminder)
+        
+        await ctx.reply(f"Reminder set for {humanize.naturaldelta(time.total_seconds())} from now.", delete_after=3)
+        
+        await asyncio.sleep(time.total_seconds())
+        await ctx.reply(f"{ctx.author.mention}, your reminder for '{reason}' is due!", delete_after=10)
+        self.reminders.remove(reminder)
+        
+    def parse_duration(self, duration):
+        match = re.match(r"(\d+)([hmsd])", duration)
+        if match:
+            amount, unit = match.groups()
+            amount = int(amount)
+            
+            if unit == "h":
+                return datetime.timedelta(hours=amount)
+            elif unit == "m":
+                return datetime.timedelta(minutes=amount)
+            elif unit == "s":
+                return datetime.timedelta(seconds=amount)
+            elif unit == "d":
+                return datetime.timedelta(days=amount)
+        
+        return None
+
+    @tasks.loop(minutes=1)
+    async def check_reminders(self):
+        now = datetime.datetime.utcnow()
+        for reminder in self.reminders:
+            if now >= reminder["end_time"]:
+                channel = self.bot.get_channel(reminder["channel"])
+                user = self.bot.get_user(reminder["user"])
+                await channel.reply(f"Hey {user.mention}, reminder for {reminder['reason']}!")
+
+
+    @commands.command()
+    async def translate(self, ctx, *, input_str: str = None):        
+        translator = Translator()
+        
+        if not input_str:
+            await ctx.send("Please provide a target language and text to translate separated by '|'.")
+            return
+        
+        parts = input_str.split('|')
+        
+        if len(parts) != 2:
+            await ctx.send("Invalid format. Please use 'target_lang | text' format.")
+            return
+        
+        target_lang = parts[0].strip().lower()
+        text = parts[1].strip()
+        
+        if target_lang == 'chineses':
+            target_lang = 'chinese (simplified)'
+        elif target_lang == 'chineset':
+            target_lang = 'chinese (traditional)'
+        elif target_lang == 'chinese':
+            await ctx.reply('Please enter chineset or chineses next time.\nI believe you want simplified')
+            target_lang = 'chinese (simplified)'
+        
+        if target_lang in LANGUAGES:
+            target_lang_code = target_lang
+        elif target_lang in LANGUAGES.values():
+            target_lang_code = [k for k, v in LANGUAGES.items() if v == target_lang][0]
+        else:
+            await ctx.send("Invalid language. Please use a valid language name or language code.")
+            return
+
+        try:
+            translated = translator.translate(text, dest=target_lang_code)
+            translated_text = translated.text
+            detected_lang = translated.src
+            
+            embed = discord.Embed(title="Translation", color=discord.Color.gold())
+            embed.add_field(name="Original Text", value=f"`{text}`", inline=False)
+            embed.add_field(name="Detected Language", value=detected_lang, inline=False)
+            embed.add_field(name="Translated Text", value=f"`{translated_text}`", inline=False)
+            embed.set_footer(text=f"Translated to {LANGUAGES[target_lang_code].capitalize()}")
+            
+            await ctx.send(embed=embed)
+            
+        except Exception as e:
+            await ctx.send(f"An error occurred: {e}")
+
 
 def setup(bot):
     bot.add_cog(Utilities(bot))
