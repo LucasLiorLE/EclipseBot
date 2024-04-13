@@ -130,5 +130,21 @@ class Moderation(commands.Cog):
         except Exception as e:
             await self.send_embed(ctx, "Unmute Member Error", f"An error occurred while trying to unmute the member: {str(e)}")
 
+    @commands.command()
+    @commands.has_permissions(manage_channels=True)
+    async def slowmode(self, ctx, delay: Optional[int] = None):
+        try:
+            if delay is None:
+                delay_seconds = 0
+                await ctx.channel.edit(slowmode_delay=delay_seconds)
+                await self.send_embed(ctx, "Slowmode", "Slowmode has been removed.")
+            elif 0 <= delay <= 21600:  
+                await ctx.channel.edit(slowmode_delay=delay)
+                await self.send_embed(ctx, "Slowmode", f"Slowmode set to {delay} seconds.")
+            else:
+                await self.send_embed(ctx, "Slowmode Error", "Please provide a delay between 0 and 21600 seconds.")
+        except Exception as e:
+            await self.send_embed(ctx, "Slowmode Error", f"An error occurred while setting slowmode: {str(e)}")
+
 def setup(bot):
     bot.add_cog(Moderation(bot))
