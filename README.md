@@ -1,5 +1,20 @@
-# Bot commands 
-## Utilities
+
+---
+
+# EclipseBot 
+
+## Table of Contents
+- [Utilities](#utilities)
+- [Moderation](#moderation)
+- [Information](#information)
+- [Fun](#fun)
+
+---
+
+## Utilities <a name="utilities"></a>
+
+<details>
+  <summary>Show Utility Commands</summary>
 
 ### `cgloves {username}`
 - **Description:** Displays the glove data for the specified `{username}`, showing which gloves they own.
@@ -13,7 +28,14 @@
 ### `translate {language} | {message}`
 - **Description:** Translates the given `{message}` into the specified `{language}`.
 
-## Moderation
+</details>
+
+---
+
+## Moderation <a name="moderation"></a>
+
+<details>
+  <summary>Show Moderation Commands</summary>
 
 ### `clear {amount} (member)`
 - **Description:** Clears `{amount}` of messages from the specified `(member)`.
@@ -45,7 +67,14 @@
 ### `nick {username} {nickname}`
 - **Description:** Sets the nickname of the specified `{username}` to `{nickname}`.
 
-## Information
+</details>
+
+---
+
+## Information <a name="information"></a>
+
+<details>
+  <summary>Show Information Commands</summary>
 
 ### `ping`
 - **Description:** Displays the current ping of the bot to reach your client. Higher values indicate slower responses.
@@ -65,7 +94,14 @@
 ### `avatar (user)`
 - **Description:** Displays the avatar of the specified `(user)`. Shows author's avatar if none specified.
 
-## Fun
+</details>
+
+---
+
+## Fun <a name="fun"></a>
+
+<details>
+  <summary>Show Fun Commands</summary>
 
 ### `say {channelID} {args}`
 - **Description:** Sends `{args}` to the specified `{channelID}`.
@@ -103,4 +139,6 @@
 ### `rps {choice}`
 - **Description:** Plays a round of Rock, Paper, Scissors with the bot.
 
-I will add more of these in the future.
+</details>
+
+---
