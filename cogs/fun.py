@@ -1,13 +1,17 @@
-from discord.ext import commands
 import discord
+from discord.ext import commands
 import random
 import requests # type: ignore
 from urllib.parse import quote
-
+import asyncpraw
 
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.reddit = asyncpraw.Reddit(client_id='Enl7jFbBrOoQTjoEfTMmDQ',
+                               client_secret='1H5GBR3N3RsoBWYKMizp0nta-66FYQ',
+                               user_agent='discord-bot:Enl7jFbBrOoQTjoEfTMmDQ:v1.0 (by /u/LucasLiorLEE)')
+
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
@@ -163,8 +167,64 @@ class Fun(commands.Cog):
 
 
     @commands.command()
+    async def meme(self, ctx):
+        try:
+            subreddit_names = [
+                "4chan", "greentext", "shitposting", "196", "blursedimages",
+                "comedyhomicide", "holesome", "TrueReddit", "ihaveihaveihavereddit",
+                "Angryupvote", "artmemes", "cursedcomments", "depression_memes",
+                "linuxmemes", "ProgrammerHumor", "maybemaybemaybe", "MEOW_IRL",
+                "PrequelMemes", "SequelMemes", "SesameStreetMemes", "TheRealJoke",
+                "Unexpected", "YouSeeComrade"
+            ]
+            
+            subreddit_name = random.choice(subreddit_names)
+            subreddit = await self.reddit.subreddit(subreddit_name)
+            
+            post = await subreddit.random()
+            
+            if post and hasattr(post, 'title') and hasattr(post, 'permalink'):
+                embed = discord.Embed(title=post.title, color=0xFF4500, url=f"https://reddit.com{post.permalink}")
+                embed.set_image(url=post.url)
+                embed.set_footer(text=f"Subreddit: {subreddit_name}")
+                
+                await ctx.reply(embed=embed)
+            else:
+                await ctx.reply("Could not fetch a post from Reddit. Please try again later.")
+            
+        except Exception as e:
+            await ctx.reply(f"An error occurred: {str(e)}")
+
+
+    @commands.command()
+    async def rps(self, ctx, choice: str):
+        choices = ['rock', 'paper', 'scissors']
+        
+        if choice.lower() not in choices:
+            await ctx.send("Invalid choice. Please choose 'rock', 'paper', or 'scissors'.")
+            return
+        
+        bot_choice = random.choice(choices)
+        
+        if choice.lower() == bot_choice:
+            result = "It's a tie!"
+        elif (choice.lower() == 'rock' and bot_choice == 'scissors') or \
+             (choice.lower() == 'paper' and bot_choice == 'rock') or \
+             (choice.lower() == 'scissors' and bot_choice == 'paper'):
+            result = "You win!"
+        else:
+            result = "You lose!"
+        
+        await ctx.send(f"You chose **{choice.capitalize()}** and the bot chose **{bot_choice.capitalize()}**. {result}")
+
+    @commands.command()
     async def dice(self, ctx, amt: int = 6):
         await ctx.reply(f"Dice roll: {random.randint(1,amt)}")
+
+    @commands.command()
+    async def coinflip(self, ctx):
+        result = random.choice(['Heads', 'Tails'])
+        await ctx.send(f"The coin landed on **{result}**!")
 
 def setup(bot):
     bot.add_cog(Fun(bot))
