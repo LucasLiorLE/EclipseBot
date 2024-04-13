@@ -1,0 +1,27 @@
+{
+    "Utilities": {
+        "ping":"Shows the current ping of the bot to reach your client. Higher = slower",
+        "help (command)":"Shows the help page for (command). Blank if all.",
+        "cgloves {username}":"Shows the glove data for {username} which displays what gloves they own."
+    },
+    "Moderation": {
+        "clear {amount} (member)":"Clears {amount} of messages from (member)",
+        "purge {amount}":"Clears {amount} of messages in the channel.",
+        "ban {member} (duration) (reason)":"Bans a member for (duration). Duration is infinite if left blank. (Reason) is left None if blank.",
+        "remove_role {member} {role}":"Revokes {role} from {member}",
+        "give_role {member} {role}":"Grants {role} to {member}"
+    },
+    "Information": {
+        "info":"Shows the info of the bot.",
+        "serverinfo":"Shows the info of the server",
+        "userinfo (user)":"Shows the info of (user). Author if None.",
+        "avatar (user)":"Shows the avatar of (user). Author if None."
+    },
+    "Fun": {
+        "say {channelID} {args}":"Says {args} in {channelID}.",
+        "DM {user} {message}":"Sends {message} to {user}.",
+        "solve {equation}":"Solves baasic equations. Glitchy.",
+        "ship (arg1) (arg2)":"Checks the compatibility between (arg1) and (arg2).",
+        "fact (num)":"Tells you (num) facts! Max = 30 per time."
+    }
+}
