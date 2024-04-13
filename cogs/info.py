@@ -34,7 +34,6 @@ class HelpSelect(discord.ui.Select):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-
 class SelectView(discord.ui.View):
     def __init__(self):
         super().__init__()
@@ -47,20 +46,17 @@ class Info(commands.Cog):
     @commands.command()
     async def ping(self, ctx):
         latency = round(self.bot.latency * 1000)
-        if latency < 81:
-            color = 0x00FF00  
-        elif latency < 201:
-            color = 0xFFFF00  
-        else:
-            color = 0xFF0000  
+        color = (0x00FF00 if latency < 81 else 
+                 0xFFFF00 if latency < 201 else 
+                 0xFF0000)
         embed = discord.Embed(title="Pong!", description=f"The latency is {latency}ms.", color=color)
         await ctx.send(embed=embed)
 
     @commands.command()
     async def info(self, ctx):
         embed = discord.Embed(title="Bot Info", description="This bot is developed by LucasLiorLE.", color=0x808080)
-        embed.add_field(name="Version", value="1.9.7-a.8")
-        embed.add_field(name="Source Code", value="[GitHub Repository](https://github.com/LucasLiorLE/DiscordBot)")
+        embed.add_field(name="Version", value="1.10.4-a.12")
+        embed.add_field(name="Source Code", value="[GitHub Repository](https://github.com/LucasLiorLE/EclipseBot)")
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
@@ -117,8 +113,6 @@ class Info(commands.Cog):
 
         view = SelectView()
         await ctx.send("Please select a category:", view=view)
-
-# END
 
 def search_command(command_name):
     for category, commands in help_data.items():
