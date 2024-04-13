@@ -146,5 +146,14 @@ class Moderation(commands.Cog):
         except Exception as e:
             await self.send_embed(ctx, "Slowmode Error", f"An error occurred while setting slowmode: {str(e)}")
 
+    @commands.command()
+    @commands.has_permissions(manage_nicknames=True)
+    async def nick(self, ctx, member: discord.Member, *, new_nick: str):
+        try:
+            await member.edit(nick=new_nick)
+            await self.send_embed(ctx, "Nickname Changed", f"Changed {member.mention}'s nickname to {new_nick}.", color=0x32a852)
+        except Exception as e:
+            await self.send_embed(ctx, "Nickname Change Error", f"An error occurred while changing the nickname: {str(e)}")
+
 def setup(bot):
     bot.add_cog(Moderation(bot))
