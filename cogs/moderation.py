@@ -19,7 +19,7 @@ class Moderation(commands.Cog):
             return msg.author == member if member else True
 
         deleted = await ctx.channel.purge(limit=amount, check=check)
-        await self.send_embed(ctx, "Clear Messages", f'Deleted {len(deleted)} message(s).')
+        await self.send_embed(ctx, "Clear Messages", f'Deleted {len(deleted)} message(s).', delete_after=3)
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
