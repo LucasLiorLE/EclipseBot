@@ -1,13 +1,13 @@
-
 ---
 
-# EclipseBot 
+# EclipseBot
 
 ## Table of Contents
 - [Utilities](#utilities)
 - [Moderation](#moderation)
 - [Information](#information)
 - [Fun](#fun)
+- [Links](#links)
 
 ---
 
@@ -140,5 +140,15 @@
 - **Description:** Plays a round of Rock, Paper, Scissors with the bot.
 
 </details>
+
+---
+
+## Links <a name="links"></a>
+
+- **Discord:** [Join our Discord server!](https://discord.gg/z6JsMzH6XQ)
+  
+- **Buy me a coffee:** [Support the bot's development](https://www.buymeacoffee.com/lucasliorle)
+  
+- **GitHub:** [Check out the bot's GitHub repository](https://github.com/LucasLiorLE/EclipseBot)
 
 ---
