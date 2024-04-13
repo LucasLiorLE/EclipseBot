@@ -1,6 +1,9 @@
 {
     "Utilities": {
-        "cgloves {username}":"Shows the glove data for {username} which displays what gloves they own."
+        "cgloves {username}":"Shows the glove data for {username} which displays what gloves they own.",
+        "convert {num} {unit} {translate}":"Translates {num} {unit} to {translate}.",
+        "remind {duration} (reason)":"Reminds you in {duration} for (reason).",
+        "translate {language} | {message}":"Translates {message} into {language}"
     },
     "Moderation": {
         "clear {amount} (member)":"Clears {amount} of messages from (member)",
@@ -29,8 +32,11 @@
         "ship (arg1) (arg2)":"Checks the compatibility between (arg1) and (arg2).",
         "fact":"Tells you a fun fact!",
         "joke":"Tells you a random joke!",
-        "dog":"Shows a cute dog",
-        "cat":"Shows a cute cat",
-        "dice (num)":"Rolls a random number between 1 and (num), 6 if None)"
+        "dog":"Shows a cute dog.",
+        "cat":"Shows a cute cat.",
+        "dice (num)":"Rolls a random number between 1 and (num), 6 if None).",
+        "coinflip":"Flip a coin!",
+        "meme":"Shows you a random meme.",
+        "rps {choice}":"Play the computer in a round of RPS."
     }
 }
