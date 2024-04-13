@@ -1,7 +1,7 @@
 
 ---
 
-# Bot Commands README
+# Eclipse Bot
 
 ## Table of Contents
 - [Utilities](#utilities)
@@ -11,6 +11,8 @@
 - [Links](#links)
 
 ---
+
+### Commands! (Optional arguments) {Required arguments}
 
 ## Utilities <a name="utilities"></a>
 
