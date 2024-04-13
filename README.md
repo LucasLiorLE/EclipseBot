@@ -1,6 +1,7 @@
+
 ---
 
-# EclipseBot
+# Bot Commands README
 
 ## Table of Contents
 - [Utilities](#utilities)
@@ -152,3 +153,4 @@
 - **GitHub:** [Check out the bot's GitHub repository](https://github.com/LucasLiorLE/EclipseBot)
 
 ---
+
