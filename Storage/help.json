@@ -1,17 +1,22 @@
 {
     "Utilities": {
-        "ping":"Shows the current ping of the bot to reach your client. Higher = slower",
-        "help (command)":"Shows the help page for (command). Blank if all.",
         "cgloves {username}":"Shows the glove data for {username} which displays what gloves they own."
     },
     "Moderation": {
         "clear {amount} (member)":"Clears {amount} of messages from (member)",
         "purge {amount}":"Clears {amount} of messages in the channel.",
+        "mute {member} {duration} (reason)":"Mutes {member} for {duration}.",
+        "unmute {member} (reason)":"Unmutes {member}.",
         "ban {member} (duration) (reason)":"Bans a member for (duration). Duration is infinite if left blank. (Reason) is left None if blank.",
+        "unban {member}":"Unbans a banned member.",
         "remove_role {member} {role}":"Revokes {role} from {member}",
-        "give_role {member} {role}":"Grants {role} to {member}"
+        "give_role {member} {role}":"Grants {role} to {member}",
+        "slowmode (amt)":"Sets the slowmode of your current channel. Removes it if (amt) = None",
+        "nick {username} {nickname}":"Sets {username}'s nickname to {nickname}"
     },
     "Information": {
+        "ping":"Shows the current ping of the bot to reach your client. Higher = slower",
+        "help (command)":"Shows the help page for (command). Blank if all.",
         "info":"Shows the info of the bot.",
         "serverinfo":"Shows the info of the server",
         "userinfo (user)":"Shows the info of (user). Author if None.",
@@ -22,6 +27,10 @@
         "DM {user} {message}":"Sends {message} to {user}.",
         "solve {equation}":"Solves baasic equations. Glitchy.",
         "ship (arg1) (arg2)":"Checks the compatibility between (arg1) and (arg2).",
-        "fact (num)":"Tells you (num) facts! Max = 30 per time."
+        "fact":"Tells you a fun fact!",
+        "joke":"Tells you a random joke!",
+        "dog":"Shows a cute dog",
+        "cat":"Shows a cute cat",
+        "dice (num)":"Rolls a random number between 1 and (num), 6 if None)"
     }
 }
