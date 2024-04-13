@@ -1,131 +1,151 @@
-from discord.ext import commands
-import discord
-import json 
 import os
+import random
+import json
+import asyncio
+from datetime import datetime, timedelta
+from urllib.parse import quote
+import requests  # type: ignore
+import aiohttp
+import discord
+from discord.ext import commands
+from discord import app_commands
+from itertools import cycle
 
-def load_help_data():
-    dir_path = os.path.dirname(os.path.abspath(__file__))
-    help_json_path = os.path.join(dir_path, '..', 'Storage', 'help.json')
-    
-    with open(help_json_path, 'r') as file:
-        return json.load(file)
+# Import cogs
+from cogs import info
+from cogs import moderation
+from cogs import fun
+from cogs import utilities
 
-help_data = load_help_data()
 
-class HelpSelect(discord.ui.Select):
+class Secrets:
     def __init__(self):
-        options = [
-            discord.SelectOption(label="Moderation", emoji="📋", description="Displays all the commands for moderation"),
-            discord.SelectOption(label="Utilities", emoji="✨", description="Displays all the commands for utilities"),
-            discord.SelectOption(label="Information", emoji="🗣️", description="Shows all the commands for information"),
-            discord.SelectOption(label="Fun", emoji="😃", description="Shows all the commands for fun")
-        ]
-        super().__init__(placeholder="Select a category", max_values=1, min_values=1, options=options)
+        with open("secrets.json") as f:
+            self.data = json.load(f)
+        self.token = self.data["token"]
+        self.prefix = self.data["prefix"]
 
-    async def callback(self, interaction: discord.Interaction):
-        category = self.values[0]
-        commands = help_data.get(category, {})
-        
-        description = "\n".join([f"`{cmd}` - {desc}" for cmd, desc in commands.items()])
-        
-        embed = discord.Embed(title=f"{category.capitalize()} Commands", description=description, color=discord.Color.blue())
-        embed.set_footer(text="(optional args) {required args}")
-        
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
-
-class SelectView(discord.ui.View):
-    def __init__(self):
-        super().__init__()
-        self.add_item(HelpSelect())
-
-class Info(commands.Cog):
+class StatusManager:
     def __init__(self, bot):
         self.bot = bot
+        self.status_messages = [
+            "INF SUCKS",
+            "I'm so skibidi",
+            "Technoblade never dies.",
+            "I should've played hypixel instead...",
+            "BRR SKIBIDI DOP DOP YES YES",
+            "This took so long to make...",
+            "I got a headache...",
+            "pls free nitro :pray:", 
+            "pls free robux :pray:",
+            "Wait when was it 3 am",
+            "STOP STARING AND GO STUDY!!!",
+        ]
 
-    @commands.command()
-    async def ping(self, ctx):
-        latency = round(self.bot.latency * 1000)
-        if latency < 81:
-            color = 0x00FF00  
-        elif latency < 201:
-            color = 0xFFFF00  
+    async def change_status(self):
+        while True:
+            await self.bot.wait_until_ready()
+            current_status = random.choice(self.status_messages)
+            await self.bot.change_presence(
+                status=discord.Status.dnd, 
+                activity=discord.Game(name=current_status)
+            )
+            await asyncio.sleep(600)
+
+
+
+class Bot(commands.Bot):
+    def __init__(self, secrets):
+        super().__init__(command_prefix=secrets.prefix, intents=discord.Intents.all(), help_command=None)
+        self.secrets = secrets
+        self.status_manager = StatusManager(self)
+
+    async def load_cogs(self):
+        await self.wait_until_ready()
+        await self.add_cog(info.Info(self))
+        await self.add_cog(moderation.Moderation(self))
+        await self.add_cog(fun.Fun(self))
+        await self.add_cog(utilities.Utilities(self))
+
+    async def on_ready(self):
+        print(f"Bot is online as {self.user} (ID: {self.user.id})")
+        print(f'Currently in {len(self.guilds)} server(s)!')
+    
+        self.loop.create_task(self.status_manager.change_status())
+        self.loop.create_task(self.load_cogs())  
+
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send(f":x: You don't have permission to use this command. Required permissions: {error.required_permissions}", delete_after=3)
+        elif isinstance(error, commands.MemberNotFound):
+            await ctx.send(":x: The username you provided was not found. (Case sensitive)", delete_after=3)
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(":x: Invalid arguments provided", delete_after=3)
+        elif isinstance(error, TypeError):
+            await ctx.send(":x: Invalid time format. Use 'h' for hours or 'd' for days.", delete_after=3)
+        elif isinstance(error, commands.CommandNotFound):
+            await ctx.send(":x: Command not found.", delete_after=3)
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(f":x: This command is on cooldown. Please try again in {error.retry_after:.2f} seconds.", delete_after=3)
+        elif isinstance(error, commands.NoPrivateMessage):
+            await ctx.send(":x: This command cannot be used in private messages.", delete_after=3)
+        elif isinstance(error, commands.CheckFailure):
+            await ctx.send(":x: You do not have the necessary permissions to use this command.", delete_after=3)
+        elif isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(":x: Missing required argument.", delete_after=3)
+        elif isinstance(error, commands.CommandError):
+            await ctx.send(f":x: An error occurred while processing your command: {error}", delete_after=3)
         else:
-            color = 0xFF0000  
-        embed = discord.Embed(title="Pong!", description=f"The latency is {latency}ms.", color=color)
-        await ctx.send(embed=embed)
+            await ctx.send(":x: An unknown error occurred while processing your command. Please try again later.", delete_after=3)
 
-    @commands.command()
-    async def info(self, ctx):
-        embed = discord.Embed(title="Bot Info", description="This bot is developed by LucasLiorLE.", color=0x808080)
-        embed.add_field(name="Version", value="1.9.8-a.9")
-        embed.add_field(name="Source Code", value="[GitHub Repository](https://github.com/LucasLiorLE/EclipseBot)")
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
-        await ctx.send(embed=embed)
 
-    @commands.command()
-    async def serverinfo(self, ctx):
-        guild = ctx.guild
-        embed = discord.Embed(title="Server Info", color=0x808080)
-        embed.add_field(name="Server Name", value=guild.name)
-        embed.add_field(name="Server Owner", value=guild.owner.mention)
-        embed.add_field(name="Server ID", value=guild.id)
-        embed.add_field(name="Members", value=guild.member_count)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
-        await ctx.send(embed=embed)
+    async def on_command_completion(self, ctx):
+        log_channel = self.get_channel(1227752190765039717)
+    
+        embed = discord.Embed(title=f"Command: {ctx.command}", color=0x7289da)
+        embed.add_field(name="User", value=ctx.author.mention, inline=False)
+        embed.add_field(name="Server", value=ctx.guild.name, inline=False)
+        embed.add_field(name="Command Message", value=f"[Click here]({ctx.message.jump_url})", inline=False)
+        embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
+        embed.set_footer(text=f"Used by {ctx.author}", icon_url=ctx.author.avatar.url)
+    
+        await log_channel.send(embed=embed)
 
-    @commands.command()
-    async def userinfo(self, ctx, member: discord.Member = None):
-        member = member or ctx.author
-        roles = [role.name for role in member.roles]
-        embed = discord.Embed(title="User Info", color=0x808080)
-        embed.set_thumbnail(url=member.avatar.url)
-        embed.add_field(name="Username", value=member.display_name)
-        embed.add_field(name="User ID", value=member.id)
-        embed.add_field(name="Joined Discord", value=member.created_at.strftime("%b %d, %Y"))
-        embed.add_field(name="Joined Server", value=member.joined_at.strftime("%b %d, %Y"))
-        embed.add_field(name="Roles", value=', '.join(roles))
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
-        await ctx.send(embed=embed)
+    async def on_message_edit(self, before, after):
+        log_channel = self.get_channel(1228755328405995530)
 
-    @commands.command()
-    async def avatar(self, ctx, member: discord.Member = None):
-        member = member or ctx.author
-        embed = discord.Embed(title=f"{member.display_name}'s Avatar", color=0x808080)
-        embed.set_image(url=member.avatar.url)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
-        await ctx.send(embed=embed)
+        embed = discord.Embed(title="Message Edited", color=0xffa500)
+        embed.add_field(name="User", value=before.author.mention, inline=False)
+        embed.add_field(name="Channel", value=before.channel.mention, inline=False)
+        embed.add_field(name="Original Message", value=before.content[:1024], inline=False)
+        embed.add_field(name="Edited Message", value=after.content[:1024], inline=False)
+        embed.add_field(name="Message Link", value=f"[Click here]({before.jump_url})", inline=False)
+        embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
+        embed.set_footer(text=f"Edited by {before.author}", icon_url=before.author.avatar.url)
 
-    @commands.command()
-    async def help(self, ctx, *, command_name: str = None):
-        if command_name:
-            command_info = search_command(command_name.lower())
-            if not command_info:
-                await ctx.send(f"No such command named `{command_name}`.")
-                return
-            category = list(command_info.keys())[0]
-            matched_cmd = list(command_info[category].keys())[0]  
-            command_description = command_info[category][matched_cmd]
-            
-            embed = discord.Embed(title=f"Help for `{matched_cmd}`", color=discord.Color.blue())
-            embed.add_field(name="Description", value=command_description)
-            embed.add_field(name="Category", value=category)
-            embed.set_footer(text="(optional args) {required args}")
-            await ctx.send(embed=embed)
-            return
+        await log_channel.send(embed=embed)
 
-        view = SelectView()
-        await ctx.send("Please select a category:", view=view)
+    async def on_message_delete(self, message):
+        log_channel = self.get_channel(1228755328405995530)
 
-# END
+        embed = discord.Embed(title="Message Deleted", color=0xff0000)
+        embed.add_field(name="User", value=message.author.mention, inline=False)
+        embed.add_field(name="Channel", value=message.channel.mention, inline=False)
+        embed.add_field(name="Message Content", value=message.content[:1024], inline=False)
+        embed.add_field(name="Message Link", value="Unavailable in deleted messages", inline=False)
+        embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
+        embed.set_footer(text=f"Deleted by {message.author}", icon_url=message.author.avatar.url)
 
-def search_command(command_name):
-    for category, commands in help_data.items():
-        for cmd, description in commands.items():
-            if cmd.startswith(command_name):
-                return {category: {cmd: description}}
-    return None
+        await log_channel.send(embed=embed)
 
-def setup(bot):
-    bot.add_cog(Info(bot))
+
+    async def process_commands(self, message):
+        content = message.content.lower()  
+        if content.startswith(self.secrets.prefix.lower()):  
+            ctx = await self.get_context(message, cls=commands.Context)
+            await self.invoke(ctx)
+
+
+secrets = Secrets()
+bot = Bot(secrets)
+asyncio.run(bot.start(secrets.token))
