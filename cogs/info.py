@@ -55,7 +55,7 @@ class Info(commands.Cog):
     @commands.command()
     async def info(self, ctx):
         embed = discord.Embed(title="Bot Info", description="This bot is developed by LucasLiorLE.", color=0x808080)
-        embed.add_field(name="Version", value="1.10.4-a.12")
+        embed.add_field(name="Version", value="1.0.0")
         embed.add_field(name="Source Code", value="[GitHub Repository](https://github.com/LucasLiorLE/EclipseBot)")
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
@@ -113,6 +113,8 @@ class Info(commands.Cog):
 
         view = SelectView()
         await ctx.send("Please select a category:", view=view)
+
+# END
 
 def search_command(command_name):
     for category, commands in help_data.items():
