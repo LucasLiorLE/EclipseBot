@@ -46,9 +46,9 @@ class Moderation(commands.Cog):
             }
         return self.modstats[user_key]
 
-    async def send_embed(self, ctx, title, description, color=0xFF5733):
+    async def send_embed(self, ctx, title, description, color=0xFF5733, delete_after=None):
         embed = discord.Embed(title=title, description=description, color=color)
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=delete_after)
 
     async def update_modstats(self, author_id, action):
         stats = self.get_user_stats(author_id)
