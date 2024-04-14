@@ -185,11 +185,12 @@ class Utilities(commands.Cog):
         
         if target_lang in LANGUAGES:
             target_lang_code = target_lang
-        elif target_lang in LANGUAGES.values():
-            target_lang_code = [k for k, v in LANGUAGES.items() if v == target_lang][0]
+        elif target_lang.lower() in [v.lower() for v in LANGUAGES.values()]:
+            target_lang_code = next(k for k, v in LANGUAGES.items() if v.lower() == target_lang.lower())
         else:
             await ctx.send("Invalid language. Please use a valid language name or language code.")
             return
+
 
         try:
             translated = translator.translate(text, dest=target_lang_code)
