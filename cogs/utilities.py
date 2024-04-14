@@ -207,6 +207,22 @@ class Utilities(commands.Cog):
         except Exception as e:
             await ctx.send(f"An error occurred: {e}")
 
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def prefix(self, ctx, prefix: str):
+        file_path = os.path.join(os.path.dirname(__file__), '..', 'Storage', 'preferences.json')
+        
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        
+        data["prefix"] = prefix
+        
+        with open(file_path, 'w') as f:
+            json.dump(data, f, indent=4)
+        
+        self.bot.command_prefix = commands.when_mentioned_or(prefix)
+        
+        await ctx.send(f"Bot prefix updated to `{prefix}`.")
 
 def setup(bot):
     bot.add_cog(Utilities(bot))
