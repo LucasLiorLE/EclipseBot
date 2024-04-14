@@ -20,16 +20,16 @@
   <summary>Show Utility Commands</summary>
 
 ### `cgloves {username}`
-- **Description:** Displays the glove data for the specified `{username}`, showing which gloves they own.
+- **Description:** Shows the glove data for `{username}`, displaying what gloves they own.
 
 ### `convert {num} {unit} {translate}`
-- **Description:** Translates the given `{num}` `{unit}` to `{translate}`.
+- **Description:** Translates `{num}` `{unit}` to `{translate}`.
 
 ### `remind {duration} (reason)`
-- **Description:** Sets a reminder for the specified `{duration}` with an optional `(reason)`.
+- **Description:** Reminds you in `{duration}` with an optional `(reason)`.
 
 ### `translate {language} | {message}`
-- **Description:** Translates the given `{message}` into the specified `{language}`.
+- **Description:** Translates `{message}` into `{language}`.
 
 </details>
 
@@ -41,34 +41,46 @@
   <summary>Show Moderation Commands</summary>
 
 ### `clear {amount} (member)`
-- **Description:** Clears `{amount}` of messages from the specified `(member)`.
+- **Description:** Clears `{amount}` of messages from `(member)`.
 
 ### `purge {amount}`
-- **Description:** Clears `{amount}` of messages in the current channel.
+- **Description:** Clears `{amount}` of messages in the channel.
 
 ### `mute {member} {duration} (reason)`
-- **Description:** Mutes the specified `{member}` for the given `{duration}` with an optional `(reason)`.
+- **Description:** Mutes `{member}` for `{duration}`.
 
 ### `unmute {member} (reason)`
-- **Description:** Unmutes the specified `{member}`.
+- **Description:** Unmutes `{member}`.
 
 ### `ban {member} (duration) (reason)`
-- **Description:** Bans the specified `{member}` for a specified `(duration)`. Duration is infinite if left blank. `(Reason)` is set to None if blank.
+- **Description:** Bans a member for `(duration)`. Duration is infinite if left blank. `(Reason)` is set to None if blank.
 
 ### `unban {member}`
-- **Description:** Unbans the specified banned `{member}`.
+- **Description:** Unbans a banned member.
+
+### `warn {member} {reason}`
+- **Description:** Warns `{member}` for `{reason}`.
+
+### `warns {member}`
+- **Description:** Check the amount of warns `{member}` has.
+
+### `delete_warn {member} {index}`
+- **Description:** Delete the `{index}` (starts at 1) warn of `{member}`.
+
+### `modstats (username)`
+- **Description:** Checks the modstats of `(username)`.
 
 ### `remove_role {member} {role}`
-- **Description:** Removes the specified `{role}` from `{member}`.
+- **Description:** Revokes `{role}` from `{member}`.
 
 ### `give_role {member} {role}`
-- **Description:** Grants the specified `{role}` to `{member}`.
+- **Description:** Grants `{role}` to `{member}`.
 
 ### `slowmode (amt)`
-- **Description:** Sets the slowmode of the current channel. Removes it if `(amt)` is set to None.
+- **Description:** Sets the slowmode of your current channel. Removes it if `(amt)` = None.
 
 ### `nick {username} {nickname}`
-- **Description:** Sets the nickname of the specified `{username}` to `{nickname}`.
+- **Description:** Sets `{username}'s` nickname to `{nickname}`.
 
 </details>
 
@@ -80,22 +92,22 @@
   <summary>Show Information Commands</summary>
 
 ### `ping`
-- **Description:** Displays the current ping of the bot to reach your client. Higher values indicate slower responses.
+- **Description:** Shows the current ping of the bot to reach your client. Higher values indicate slower responses.
 
 ### `help (command)`
-- **Description:** Displays the help page for the specified `(command)`. Shows all commands if blank.
+- **Description:** Shows the help page for `(command)`. Shows all commands if blank.
 
 ### `info`
-- **Description:** Displays information about the bot.
+- **Description:** Shows information about the bot.
 
 ### `serverinfo`
-- **Description:** Displays information about the server.
+- **Description:** Shows information about the server.
 
 ### `userinfo (user)`
-- **Description:** Displays information about the specified `(user)`. Shows author's info if none specified.
+- **Description:** Shows information about `(user)`. Shows author's info if none specified.
 
 ### `avatar (user)`
-- **Description:** Displays the avatar of the specified `(user)`. Shows author's avatar if none specified.
+- **Description:** Shows the avatar of `(user)`. Shows author's avatar if none specified.
 
 </details>
 
@@ -107,10 +119,10 @@
   <summary>Show Fun Commands</summary>
 
 ### `say {channelID} {args}`
-- **Description:** Sends `{args}` to the specified `{channelID}`.
+- **Description:** Says `{args}` in `{channelID}`.
 
 ### `DM {user} {message}`
-- **Description:** Sends `{message}` as a direct message to the specified `{user}`.
+- **Description:** Sends `{message}` to `{user}`.
 
 ### `solve {equation}`
 - **Description:** Solves basic equations. Note: may be glitchy.
@@ -119,28 +131,28 @@
 - **Description:** Checks the compatibility between `{arg1}` and `{arg2}`.
 
 ### `fact`
-- **Description:** Shares a fun fact!
+- **Description:** Tells you a fun fact!
 
 ### `joke`
-- **Description:** Tells a random joke!
+- **Description:** Tells you a random joke!
 
 ### `dog`
-- **Description:** Displays a picture of a cute dog.
+- **Description:** Shows a cute dog.
 
 ### `cat`
-- **Description:** Displays a picture of a cute cat.
+- **Description:** Shows a cute cat.
 
 ### `dice (num)`
 - **Description:** Rolls a random number between 1 and `{num}` (defaults to 6 if none specified).
 
 ### `coinflip`
-- **Description:** Flips a coin!
+- **Description:** Flip a coin!
 
 ### `meme`
-- **Description:** Shows a random meme.
+- **Description:** Shows you a random meme.
 
 ### `rps {choice}`
-- **Description:** Plays a round of Rock, Paper, Scissors with the bot.
+- **Description:** Play the computer in a round of RPS.
 
 </details>
 
@@ -156,4 +168,3 @@
 - **GitHub:** [Check out the bot's GitHub repository](https://github.com/LucasLiorLE/EclipseBot)
 
 ---
-
