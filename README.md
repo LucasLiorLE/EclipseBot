@@ -147,6 +147,7 @@
 ---
 
 ## Links <a name="links"></a>
+- **Bot invite:** [Invite the bot to your discord server!](https://discord.com/oauth2/authorize?client_id=1227399883938463744&permissions=1254295416006&response_type=code&redirect_uri=https%3A%2F%2Fwww.buymeacoffee.com%2FLucasLiorLE&scope=bot)
 
 - **Discord:** [Join our Discord server!](https://discord.gg/z6JsMzH6XQ)
   
