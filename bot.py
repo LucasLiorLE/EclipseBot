@@ -18,12 +18,17 @@ from cogs import fun
 from cogs import utilities
 
 
+class Prefix:
+    def __init__(self):
+        with open("Storage/preferences.json") as f:
+            self.data = json.load(f)
+        self.prefix = self.data["prefix"]
+
 class Secrets:
     def __init__(self):
         with open("secrets.json") as f:
             self.data = json.load(f)
         self.token = self.data["token"]
-        self.prefix = self.data["prefix"]
 
 class StatusManager:
     def __init__(self, bot):
@@ -52,12 +57,11 @@ class StatusManager:
             )
             await asyncio.sleep(600)
 
-
-
 class Bot(commands.Bot):
-    def __init__(self, secrets):
-        super().__init__(command_prefix=secrets.prefix, intents=discord.Intents.all(), help_command=None)
+    def __init__(self, secrets, prefix):
+        super().__init__(command_prefix=prefix.prefix, intents=discord.Intents.all(), help_command=None)
         self.secrets = secrets
+        self.prefix = prefix
         self.status_manager = StatusManager(self)
 
     async def load_cogs(self):
@@ -134,18 +138,33 @@ class Bot(commands.Bot):
         embed.add_field(name="Message Content", value=message.content[:1024], inline=False)
         embed.add_field(name="Message Link", value="Unavailable in deleted messages", inline=False)
         embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
-        embed.set_footer(text=f"Deleted by {message.author}", icon_url=message.author.avatar.url)
+        
+        if message.author.avatar:
+            embed.set_footer(text=f"Deleted by {message.author}", icon_url=message.author.avatar.url)
+        else:
+            embed.set_footer(text=f"Deleted by {message.author}")
 
         await log_channel.send(embed=embed)
 
-
     async def process_commands(self, message):
-        content = message.content.lower()  
-        if content.startswith(self.secrets.prefix.lower()):  
+        content = message.content.lower().strip()
+        
+        if not content:
+            return
+        
+        command = content.split()[0]        
+        if command.startswith(self.prefix.prefix.lower()):
             ctx = await self.get_context(message, cls=commands.Context)
             await self.invoke(ctx)
+        
+        if command == f"{self.prefix.prefix}prefix":
+            self.prefix.prefix = message.content.split()[1]
+            print(f"Bot prefix updated to {self.prefix.prefix}.")
+            self.command_prefix = self.prefix.prefix  
 
 
-secrets = Secrets()
-bot = Bot(secrets)
-asyncio.run(bot.start(secrets.token))
+if __name__ == "__main__":
+    prefix = Prefix()
+    secrets = Secrets()
+    bot = Bot(secrets, prefix)
+    bot.run(secrets.token)
