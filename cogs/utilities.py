@@ -219,7 +219,8 @@ class Utilities(commands.Cog):
         with open(file_path, 'r') as f:
             data = json.load(f)
         
-        data[ctx.guild.id["prefix"]] = prefix
+        guild_id = str(ctx.guild.id)  # Convert guild ID to string
+        data[guild_id] = {"prefix": prefix}  # Set prefix for the guild
         
         with open(file_path, 'w') as f:
             json.dump(data, f, indent=4)
@@ -227,6 +228,7 @@ class Utilities(commands.Cog):
         self.bot.command_prefix = commands.when_mentioned_or(prefix)
         
         await ctx.reply(f"Bot prefix updated to `{prefix}`.")
+
 
 def setup(bot):
     bot.add_cog(Utilities(bot))
