@@ -1,34 +1,33 @@
-import os
 import random
 import json
 import asyncio
-from datetime import datetime, timedelta
-from urllib.parse import quote
-import requests  # type: ignore
-import aiohttp
+from datetime import datetime
 import discord
 from discord.ext import commands
-from discord import app_commands
-from itertools import cycle
-
-# Import cogs
-from cogs import info
-from cogs import moderation
-from cogs import fun
-from cogs import utilities
+from cogs import info, moderation, fun, utilities
 
 
-class Prefix:
-    def __init__(self):
-        with open("Storage/preferences.json") as f:
+class Preferences:
+    def __init__(self, bot):
+        self.bot = bot
+        with open("Storage/preferences.json", "r") as f:
             self.data = json.load(f)
-        self.prefix = self.data["prefix"]
+        
+    def get_prefix(self, guild):
+        guild_id = str(guild.id)
+        return self.data.get(guild_id, {}).get("prefix", ".")
+
+    def get_logs(self, guild):
+        guild_id = str(guild.id)
+        return self.data.get(guild_id, {}).get("logs", None)
+
 
 class Secrets:
     def __init__(self):
         with open("secrets.json") as f:
             self.data = json.load(f)
         self.token = self.data["token"]
+
 
 class StatusManager:
     def __init__(self, bot):
@@ -45,6 +44,8 @@ class StatusManager:
             "pls free robux :pray:",
             "Wait when was it 3 am",
             "STOP STARING AND GO STUDY!!!",
+            "Big update soon?",
+            "I'm literally making this bot for fun.",
         ]
 
     async def change_status(self):
@@ -57,11 +58,12 @@ class StatusManager:
             )
             await asyncio.sleep(600)
 
+
 class Bot(commands.Bot):
-    def __init__(self, secrets, prefix):
-        super().__init__(command_prefix=prefix.prefix, intents=discord.Intents.all(), help_command=None)
+    def __init__(self, secrets):
+        super().__init__(command_prefix=None, intents=discord.Intents.all(), help_command=None)
         self.secrets = secrets
-        self.prefix = prefix
+        self.preferences = Preferences(self)
         self.status_manager = StatusManager(self)
 
     async def load_cogs(self):
@@ -77,6 +79,83 @@ class Bot(commands.Bot):
     
         self.loop.create_task(self.status_manager.change_status())
         self.loop.create_task(self.load_cogs())  
+
+    async def on_guild_join(self, guild: discord.Guild):
+        with open("Storage/preferences.json", "r+") as f:
+            data = json.load(f)
+            data[str(guild.id)] = {
+                "prefix": ".",
+                "logs": None
+            }
+            f.seek(0)
+            json.dump(data, f, indent=4)
+
+    async def on_message_edit(self, before, after):
+        log_channel = self.get_channel(self.preferences.get_logs(before.guild))
+        
+        if log_channel is None:
+            return
+
+        embed = discord.Embed(title="Message Edited", color=discord.Color.gold())
+        embed.add_field(name="User", value=before.author.mention, inline=False)
+        embed.add_field(name="Channel", value=before.channel.mention, inline=False)
+        embed.add_field(name="Original Message", value=before.content[:1024], inline=False)
+        embed.add_field(name="Edited Message", value=after.content[:1024], inline=False)
+        embed.add_field(name="Message Link", value=f"[Click here]({before.jump_url})", inline=False)
+        embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
+        
+        if before.author.avatar:
+            embed.set_footer(text=f"Edited by {before.author}", icon_url=before.author.avatar.url)
+        else:
+            embed.set_footer(text=f"Edited by {before.author}")
+
+        await log_channel.send(embed=embed)
+
+    async def on_message_delete(self, message):
+        log_channel = self.get_channel(self.preferences.get_logs(message.guild))
+        
+        if log_channel is None:
+            return
+
+        embed = discord.Embed(title="Message Deleted", color=discord.Color.red())
+        embed.add_field(name="User", value=message.author.mention, inline=False)
+        embed.add_field(name="Channel", value=message.channel.mention, inline=False)
+        embed.add_field(name="Message Content", value=message.content[:1024], inline=False)
+        embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
+        
+        if message.author.avatar:
+            embed.set_footer(text=f"Deleted by {message.author}", icon_url=message.author.avatar.url)
+        else:
+            embed.set_footer(text=f"Deleted by {message.author}")
+
+        await log_channel.send(embed=embed)
+
+    async def process_commands(self, message):
+        content = message.content.lower().strip()
+
+        if not content:
+            return
+
+        command = content.split()[0]
+        self.command_prefix = self.preferences.get_prefix(message)
+
+        if message.guild is None:
+            return
+
+        if command.startswith(self.command_prefix):
+            ctx = await self.get_context(message, cls=commands.Context)
+            
+            if command == f"{self.command_prefix}prefix":
+                new_prefix = message.content.split()[1]
+                with open("Storage/preferences.json", "r+") as f:
+                    data = json.load(f)
+                    data[str(ctx.guild.id)]["prefix"] = new_prefix
+                    f.seek(0)
+                    json.dump(data, f, indent=4)
+                    
+                self.command_prefix = new_prefix 
+
+            await self.invoke(ctx)
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
@@ -102,69 +181,7 @@ class Bot(commands.Bot):
         else:
             await ctx.send(":x: An unknown error occurred while processing your command. Please try again later.", delete_after=3)
 
-
-    async def on_command_completion(self, ctx):
-        log_channel = self.get_channel(1227752190765039717)
-    
-        embed = discord.Embed(title=f"Command: {ctx.command}", color=0x7289da)
-        embed.add_field(name="User", value=ctx.author.mention, inline=False)
-        embed.add_field(name="Server", value=ctx.guild.name, inline=False)
-        embed.add_field(name="Command Message", value=f"[Click here]({ctx.message.jump_url})", inline=False)
-        embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
-        embed.set_footer(text=f"Used by {ctx.author}", icon_url=ctx.author.avatar.url)
-    
-        await log_channel.send(embed=embed)
-
-    async def on_message_edit(self, before, after):
-        log_channel = self.get_channel(1228755328405995530)
-
-        embed = discord.Embed(title="Message Edited", color=0xffa500)
-        embed.add_field(name="User", value=before.author.mention, inline=False)
-        embed.add_field(name="Channel", value=before.channel.mention, inline=False)
-        embed.add_field(name="Original Message", value=before.content[:1024], inline=False)
-        embed.add_field(name="Edited Message", value=after.content[:1024], inline=False)
-        embed.add_field(name="Message Link", value=f"[Click here]({before.jump_url})", inline=False)
-        embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
-        embed.set_footer(text=f"Edited by {before.author}", icon_url=before.author.avatar.url)
-
-        await log_channel.send(embed=embed)
-
-    async def on_message_delete(self, message):
-        log_channel = self.get_channel(1228755328405995530)
-
-        embed = discord.Embed(title="Message Deleted", color=0xff0000)
-        embed.add_field(name="User", value=message.author.mention, inline=False)
-        embed.add_field(name="Channel", value=message.channel.mention, inline=False)
-        embed.add_field(name="Message Content", value=message.content[:1024], inline=False)
-        embed.add_field(name="Message Link", value="Unavailable in deleted messages", inline=False)
-        embed.add_field(name="Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'), inline=False)
-        
-        if message.author.avatar:
-            embed.set_footer(text=f"Deleted by {message.author}", icon_url=message.author.avatar.url)
-        else:
-            embed.set_footer(text=f"Deleted by {message.author}")
-
-        await log_channel.send(embed=embed)
-
-    async def process_commands(self, message):
-        content = message.content.lower().strip()
-        
-        if not content:
-            return
-        
-        command = content.split()[0]        
-        if command.startswith(self.prefix.prefix.lower()):
-            ctx = await self.get_context(message, cls=commands.Context)
-            await self.invoke(ctx)
-        
-        if command == f"{self.prefix.prefix}prefix":
-            self.prefix.prefix = message.content.split()[1]
-            print(f"Bot prefix updated to {self.prefix.prefix}.")
-            self.command_prefix = self.prefix.prefix  
-
-
 if __name__ == "__main__":
-    prefix = Prefix()
     secrets = Secrets()
-    bot = Bot(secrets, prefix)
+    bot = Bot(secrets)
     bot.run(secrets.token)
