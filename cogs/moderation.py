@@ -5,13 +5,27 @@ from typing import Optional
 import re
 import json
 
+
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.modstats_file = "Storage/Logs/modstats.json"
         self.warns_file = "Storage/Logs/warns.json"
+        self.preferences_file = "Storage/Logs/preferences.json"
         self.load_modstats()
         self.load_warns()
+        self.load_preferences()
+
+    def load_preferences(self):
+        try:
+            with open(self.preferences_file, 'r') as f:
+                self.preferences = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            self.preferences = {}
+
+    def save_preferences(self):
+        with open(self.preferences_file, 'w') as f:
+            json.dump(self.preferences, f, indent=4)
 
     def load_warns(self):
         try:
@@ -35,41 +49,64 @@ class Moderation(commands.Cog):
         with open(self.modstats_file, 'w') as f:
             json.dump(self.modstats, f, indent=4)
 
-    def get_user_stats(self, user_id):
-        user_key = str(user_id)
-        if user_key not in self.modstats:
-            self.modstats[user_key] = {
-                "bans": 0,
-                "warns": 0,
-                "mutes": 0,
-                "total": 0,
-            }
-        return self.modstats[user_key]
+    def get_guild_modstats(self, guild_id):
+        if str(guild_id) not in self.modstats:
+            self.modstats[str(guild_id)] = {}
+        return self.modstats[str(guild_id)]
+
+    def get_guild_warns(self, guild_id):
+        if str(guild_id) not in self.warns:
+            self.warns[str(guild_id)] = {}
+        return self.warns[str(guild_id)]
 
     async def send_embed(self, ctx, title, description, color=0xFF5733, delete_after=None):
         embed = discord.Embed(title=title, description=description, color=color)
         await ctx.send(embed=embed, delete_after=delete_after)
 
-    async def update_modstats(self, author_id, action):
-        stats = self.get_user_stats(author_id)
+    async def update_modstats(self, ctx, author_id, action):
+        guild_id = ctx.guild.id
+        stats = self.get_guild_modstats(guild_id)
+        if str(author_id) not in stats:
+            stats[str(author_id)] = {
+                "bans": 0,
+                "warns": 0,
+                "mutes": 0,
+                "total": 0,
+            }
         if action == "ban":
-            stats["bans"] += 1
+            stats[str(author_id)]["bans"] += 1
         elif action == "mute":
-            stats["mutes"] += 1
+            stats[str(author_id)]["mutes"] += 1
         elif action == "warn":
-            stats["warns"] += 1
-        stats["total"] += 1
+            stats[str(author_id)]["warns"] += 1
+        stats[str(author_id)]["total"] += 1
         self.save_modstats()
+
+    def get_user_stats(self, guild_id, author_id):
+        stats = self.get_guild_modstats(guild_id)
+        if str(author_id) in stats:
+            return stats[str(author_id)]
+        return None
 
     @commands.command(aliases=['ms'])
     async def modstats(self, ctx, user: Optional[discord.User] = None):
         user = user or ctx.author
-        stats = self.get_user_stats(user.id)
-        embed = discord.Embed(title=f"Moderation Stats for {user.display_name}", color=0x7289da)
-        embed.add_field(name="Bans", value=stats.get("bans", 0))
-        embed.add_field(name="Warns", value=stats.get("warns", 0))
-        embed.add_field(name="Mutes", value=stats.get("mutes", 0))
-        await ctx.send(embed=embed)
+        guild_id = ctx.guild.id
+        author_id = user.id
+        user_stats = self.get_user_stats(guild_id, author_id)
+        
+        if user_stats:
+            embed = discord.Embed(title=f"Moderation Stats for {user.name}#{user.discriminator}", color=discord.Color.green())
+            embed.add_field(name="Bans", value=user_stats["bans"])
+            embed.add_field(name="Mutes", value=user_stats["mutes"])
+            embed.add_field(name="Warns", value=user_stats["warns"])
+            embed.add_field(name="Total Actions", value=user_stats["total"])
+            
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("User has no moderation stats.")
+
+
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
@@ -112,7 +149,7 @@ class Moderation(commands.Cog):
                 await member.ban(delete_message_days=0, reason=reason)
                 await self.send_embed(ctx, "Ban Member", f"{member.mention} has been banned indefinitely.")
             
-            await self.update_modstats(ctx.author.id, "ban")
+            await self.update_modstats(ctx, ctx.author.id, "ban") 
 
         except Exception as e:
             await self.send_embed(ctx, "Ban Member Error", f"An error occurred while trying to ban the member: {str(e)}")
@@ -139,20 +176,34 @@ class Moderation(commands.Cog):
                 await member.timeout(10000000000000, reason=reason)
                 await self.send_embed(ctx, "Mute Member", f"{member.mention} has been muted indefinitely. Reason: {reason or 'Reason not provided.'}")
 
-            await self.update_modstats(ctx.author.id, "mute")
+            await self.update_modstats(ctx, ctx.author.id, "mute") 
 
         except Exception as e:
             await self.send_embed(ctx, "Mute Member Error", f"An error occurred while trying to mute the member: {str(e)}")
 
     @commands.command()
+    @commands.has_permissions(manage_channels=True)
+    async def logs(self, ctx, channel: discord.TextChannel):
+        try:
+            guild_id = ctx.guild.id
+            self.preferences.data[str(guild_id)]["logs"] = channel.id
+            self.preferences.save_preferences()
+            await self.send_embed(ctx, "Logging Channel Updated", f"Logging channel has been set to {channel.mention}.")
+        except Exception as e:
+            await self.send_embed(ctx, "Logs Error", f"An error occurred while setting the logging channel: {str(e)}")
+
+    @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def warn(self, ctx, member: discord.Member, *, reason: str = None):
         try:
+            guild_id = ctx.guild.id
+            warns = self.get_guild_warns(guild_id)
             user_key = str(member.id)
-            if user_key not in self.warns:
-                self.warns[user_key] = []
-                
-            self.warns[user_key].append({
+            
+            if user_key not in warns:
+                warns[user_key] = []
+            
+            warns[user_key].append({
                 "moderator": str(ctx.author),
                 "reason": reason or "Reason not provided."
             })
@@ -160,13 +211,14 @@ class Moderation(commands.Cog):
             self.save_warns()
             await self.send_embed(ctx, "Warn Member", f"{member.mention} has been warned. Reason: {reason or 'Reason not provided.'}")
 
-            await self.update_modstats(ctx.author.id, "warn")
+            await self.update_modstats(ctx, ctx.author.id, "warn")
 
         except Exception as e:
             await self.send_embed(ctx, "Warn Member Error", f"An error occurred while trying to warn the member: {str(e)}")
 
-    @commands.command()
-    async def warns(self, ctx, user: Optional[discord.User] = None):
+
+    @commands.command(aliases=['warns'])
+    async def warnings(self, ctx, user: Optional[discord.User] = None):
         user = user or ctx.author
         user_key = str(user.id)
         user_warns = self.warns.get(user_key, [])
@@ -178,12 +230,13 @@ class Moderation(commands.Cog):
         embed = discord.Embed(title=f"Warnings for {user.display_name}", color=0x7289da)
         
         for i, warn in enumerate(user_warns, 1):
-            moderator = warn["moderator"]
+            moderator = ctx.guild.get_member(int(warn["moderator"])) or warn["moderator"]
             reason = warn["reason"]
             embed.add_field(name=f"Warning {i} by {moderator}", value=f"Reason: {reason}", inline=False)
             embed.add_footer(text="Use delwarn or delete_warn to remove warns.")
 
         await ctx.send(embed=embed)
+
 
     @commands.command(aliases=['delwarn'])
     @commands.has_permissions(manage_messages=True)
