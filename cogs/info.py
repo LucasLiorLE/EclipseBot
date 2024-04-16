@@ -2,6 +2,8 @@ from discord.ext import commands
 import discord
 import json 
 import os
+import humanize
+import datetime
 
 def load_help_data():
     dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -57,10 +59,18 @@ class Info(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def info(self, ctx):
         embed = discord.Embed(title="Bot Info", description="This bot is developed by LucasLiorLE.", color=0x808080)
-        embed.add_field(name="Version", value="1.0.0")
-        embed.add_field(name="Source Code", value="[GitHub Repository](https://github.com/LucasLiorLE/EclipseBot)")
+        
+        embed.add_field(name="Version", value="1.43.12")
+        embed.add_field(name="Source Code", value="[GitHub Repository](https://github.com/LucasLiorLE)")
+        embed.add_field(name="Bot Created", value=f"<t:1712847600:F>\n<t:1712847600:R>", inline=False)
+        embed.add_field(name="Server Count", value=len(self.bot.guilds), inline=True)
+        embed.add_field(name="Library", value="discord.py", inline=True)
+        embed.add_field(name="Support Server", value="[Join here](https://discord.gg/88K7rcytJs)", inline=False)
+        
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
+        
         await ctx.send(embed=embed)
+
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
