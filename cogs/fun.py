@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import random
-import requests # type: ignore
+import requests
 from urllib.parse import quote
 import asyncpraw
 
@@ -11,8 +11,7 @@ class Fun(commands.Cog):
         self.reddit = asyncpraw.Reddit(client_id='Enl7jFbBrOoQTjoEfTMmDQ',
                                client_secret='1H5GBR3N3RsoBWYKMizp0nta-66FYQ',
                                user_agent='discord-bot:Enl7jFbBrOoQTjoEfTMmDQ:v1.0 (by /u/LucasLiorLEE)')
-
-
+        
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def say(self, ctx, channel_id: int, *, message: str = None):
@@ -44,6 +43,7 @@ class Fun(commands.Cog):
             await ctx.send(f"No message to send :(")
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def solve(self, ctx, *, equation):
         equation = quote(equation, safe='')
         url = f"http://api.mathjs.org/v4/?expr={equation}"
@@ -54,6 +54,7 @@ class Fun(commands.Cog):
             await ctx.reply(f"An error occurred: {response.text}")
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def ship(self, ctx, arg1: str = None, arg2: str = None):
         if arg1 is None:
             arg1 = ctx.author.name
@@ -72,6 +73,7 @@ class Fun(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def fact(self, ctx):
         try:
             a = await ctx.reply("Fetching a random fact... This might take a moment!")
@@ -90,6 +92,7 @@ class Fun(commands.Cog):
 
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def joke(self, ctx):
         try:
             a = await ctx.reply("Fetching a joke... This might take a moment.")
@@ -110,6 +113,7 @@ class Fun(commands.Cog):
             await ctx.send(f"An error occurred: {str(e)}")
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def cat(self, ctx):
         try:
             a = await ctx.reply("Fetching a cute cat picture... Hold on!")
@@ -129,6 +133,7 @@ class Fun(commands.Cog):
             await ctx.send(f"An error occurred: {str(e)}")
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def dog(self, ctx):
         try:
             a = await ctx.reply("Fetching an adorable dog picture... One moment!")
@@ -149,6 +154,7 @@ class Fun(commands.Cog):
 
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def quote(self, ctx):
         try:
             a = await ctx.reply("Fetching an inspirational quote... Hold tight!")
@@ -167,6 +173,7 @@ class Fun(commands.Cog):
 
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def meme(self, ctx):
         try:
             subreddit_names = [
@@ -197,6 +204,7 @@ class Fun(commands.Cog):
 
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def rps(self, ctx, choice: str):
         choices = ['rock', 'paper', 'scissors']
         
@@ -218,10 +226,12 @@ class Fun(commands.Cog):
         await ctx.send(f"You chose **{choice.capitalize()}** and the bot chose **{bot_choice.capitalize()}**. {result}")
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def dice(self, ctx, amt: int = 6):
         await ctx.reply(f"Dice roll: {random.randint(1,amt)}")
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def coinflip(self, ctx):
         result = random.choice(['Heads', 'Tails'])
         await ctx.send(f"The coin landed on **{result}**!")
