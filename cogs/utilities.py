@@ -17,14 +17,15 @@ class Utilities(commands.Cog):
 
     @commands.command()
     async def cgloves(self, ctx, roblox_username: str):
+        a = await ctx.reply("Fetching user gloves. This might take a while...")
         async with aiohttp.ClientSession() as session:
             response = await session.post("https://users.roblox.com/v1/usernames/users", json={"usernames": [roblox_username], "excludeBannedUsers": True})
             if response.status != 200:
-                await ctx.send("An error occurred while fetching the user's Roblox ID.")
+                await a.edit("An error occurred while fetching the user's Roblox ID.")
                 return
             data = await response.json()
             if not data["data"]:
-                await ctx.send(f"No data found for the username: {roblox_username}")
+                await a.edit(f"No data found for the username: {roblox_username}")
                 return
             roblox_id = data["data"][0]["id"]
 
@@ -40,7 +41,7 @@ class Utilities(commands.Cog):
             if response.status == 200:
                 data = await response.json()
                 if not data['data']:
-                    await ctx.send(f"No badges found for the user: {roblox_username}")
+                    await a.edit(f"No badges found for the user: {roblox_username}")
                     return
 
                 owned = [glove for glove, badge_ids in gloves.items() if all(any(badge.get('badgeId') == badge_id for badge in data['data']) for badge_id in badge_ids)]
@@ -63,16 +64,17 @@ class Utilities(commands.Cog):
                     date, time, fraction = awarded_date.replace('Z', '+0000').partition('.')
                     fraction = fraction[:fraction.index('+')][:6] + '+0000'
                     awarded_date = f"{date}.{fraction}"
-                    awarded_date = datetime.strptime(awarded_date, "%Y-%m-%dT%H:%M:%S.%f%z")
+                    awarded_date = datetime.datetime.strptime(awarded_date, "%Y-%m-%dT%H:%M:%S.%f%z")
                     epoch_time = int(awarded_date.timestamp())
                     embed.add_field(name=badge_name, value=f"Obtained on <t:{epoch_time}:F>", inline=False)
 
-                await ctx.send(embed=embed)
+                await a.edit(embed=embed)
             else:
-                await ctx.send("An error occurred while fetching the user's badges.")
+                await a.edit("An error occurred while fetching the user's badges.")
 
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def convert(self, ctx, value: float, unit_from: str, unit_to: str):
         
         length_factors = {'mm': 0.001, 'cm': 0.01, 'm': 1.0, 'km': 1000.0}
@@ -87,30 +89,31 @@ class Utilities(commands.Cog):
 
         if unit_from in length_factors and unit_to in length_factors:
             converted_value = value * length_factors[unit_from] / length_factors[unit_to]
-            await ctx.send(f"{value} {unit_from} is {converted_value} {unit_to}.")
+            await ctx.reply(f"{value} {unit_from} is {converted_value} {unit_to}.")
         
         elif unit_from in weight_factors and unit_to in weight_factors:
             converted_value = value * weight_factors[unit_from] / weight_factors[unit_to]
-            await ctx.send(f"{value} {unit_from} is {converted_value} {unit_to}.")
+            await ctx.reply(f"{value} {unit_from} is {converted_value} {unit_to}.")
         
         elif unit_from in volume_factors and unit_to in volume_factors:
             converted_value = value * volume_factors[unit_from] / volume_factors[unit_to]
-            await ctx.send(f"{value} {unit_from} is {converted_value} {unit_to}.")
+            await ctx.reply(f"{value} {unit_from} is {converted_value} {unit_to}.")
         
         elif unit_from in temperature_factors and unit_to in temperature_factors[unit_from]:
             converted_value = temperature_factors[unit_from][unit_to](value)
-            await ctx.send(f"{value}°{unit_from} is {converted_value}°{unit_to}.")
+            await ctx.reply(f"{value}°{unit_from} is {converted_value}°{unit_to}.")
         
         else:
-            await ctx.send("Invalid units or incompatible unit types. Please check your units and try again.")
+            await ctx.reply("Invalid units or incompatible unit types. Please check your units and try again.")
 
 
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def remind(self, ctx, duration, *, reason=None):
         time = self.parse_duration(duration)
         
         if time is None:
-            await ctx.send("Invalid duration format. Use `1h`, `1m`, `1s`, or `1d`.")
+            await ctx.reply("Invalid duration format. Use `1h`, `1m`, `1s`, or `1d`.")
             return
         
         if reason is None:
@@ -157,19 +160,19 @@ class Utilities(commands.Cog):
                 user = self.bot.get_user(reminder["user"])
                 await channel.reply(f"Hey {user.mention}, reminder for {reminder['reason']}!")
 
-
     @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def translate(self, ctx, *, input_str: str = None):        
         translator = Translator()
         
         if not input_str:
-            await ctx.send("Please provide a target language and text to translate separated by '|'.")
+            await ctx.reply("Please provide a target language and text to translate separated by '|'.")
             return
         
         parts = input_str.split('|')
         
         if len(parts) != 2:
-            await ctx.send("Invalid format. Please use 'target_lang | text' format.")
+            await ctx.reply("Invalid format. Please use 'target_lang | text' format.")
             return
         
         target_lang = parts[0].strip().lower()
@@ -188,7 +191,7 @@ class Utilities(commands.Cog):
         elif target_lang.lower() in [v.lower() for v in LANGUAGES.values()]:
             target_lang_code = next(k for k, v in LANGUAGES.items() if v.lower() == target_lang.lower())
         else:
-            await ctx.send("Invalid language. Please use a valid language name or language code.")
+            await ctx.reply("Invalid language. Please use a valid language name or language code.")
             return
 
 
@@ -203,10 +206,10 @@ class Utilities(commands.Cog):
             embed.add_field(name="Translated Text", value=f"`{translated_text}`", inline=False)
             embed.set_footer(text=f"Translated to {LANGUAGES[target_lang_code].capitalize()}")
             
-            await ctx.send(embed=embed)
+            await ctx.reply(embed=embed)
             
         except Exception as e:
-            await ctx.send(f"An error occurred: {e}")
+            await ctx.reply(f"An error occurred: {e}")
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -216,14 +219,14 @@ class Utilities(commands.Cog):
         with open(file_path, 'r') as f:
             data = json.load(f)
         
-        data["prefix"] = prefix
+        data[ctx.guild.id["prefix"]] = prefix
         
         with open(file_path, 'w') as f:
             json.dump(data, f, indent=4)
         
         self.bot.command_prefix = commands.when_mentioned_or(prefix)
         
-        await ctx.send(f"Bot prefix updated to `{prefix}`.")
+        await ctx.reply(f"Bot prefix updated to `{prefix}`.")
 
 def setup(bot):
     bot.add_cog(Utilities(bot))
