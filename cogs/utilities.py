@@ -3,11 +3,14 @@ import json
 from discord.ext import commands, tasks
 import discord
 import datetime
+from datetime import datetime
 import aiohttp
 import re
 import humanize
 import asyncio
 from googletrans import Translator, LANGUAGES
+
+afk_dict = {}
 
 class Utilities(commands.Cog):
     def __init__(self, bot):
@@ -220,8 +223,10 @@ class Utilities(commands.Cog):
             data = json.load(f)
         
         guild_id = str(ctx.guild.id) 
-        data[guild_id] = {"prefix": prefix} 
-        
+        if guild_id not in data:
+            data[guild_id] = {}
+        data[guild_id]["prefix"] = prefix
+                
         with open(file_path, 'w') as f:
             json.dump(data, f, indent=4)
         
@@ -229,6 +234,47 @@ class Utilities(commands.Cog):
         
         await ctx.reply(f"Bot prefix updated to `{prefix}`.")
 
+    @commands.command()
+    async def afk(self, ctx, *, reason=None):
+        global afk_dict
+        if ctx.author.id in afk_dict:
+            nickname, reason, afk_since = afk_dict[ctx.author.id]
+            del afk_dict[ctx.author.id]
+            await ctx.author.edit(nick=nickname)
+            embed = discord.Embed(title="Welcome Back!", description=f"{ctx.author.mention} is no longer AFK", color=discord.Color.green())
+            await ctx.send(embed=embed)
+        else:
+            nickname = ctx.author.display_name
+            afk_dict[ctx.author.id] = [nickname, reason, datetime.utcnow(), ctx.message.id]
+            await ctx.author.edit(nick=f"[AFK] {nickname}")
+            embed = discord.Embed(title="AFK", description=f"{ctx.author.mention} is now AFK: {reason}", color=discord.Color.blue())
+            await ctx.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        global afk_dict
+        if message.author.bot:
+            return
+        if message.author.id in afk_dict and afk_dict[message.author.id][3] != message.id and not message.content.startswith('!afk'):
+            nickname, reason, afk_since, msg_id = afk_dict[message.author.id]
+            del afk_dict[message.author.id]
+            await message.author.edit(nick=nickname)
+            embed = discord.Embed(title="Welcome Back!", description=f"{message.author.mention} is no longer AFK", color=discord.Color.green())
+            await message.channel.send(embed=embed)
+        for mention in message.mentions:
+            if mention.id in afk_dict and mention.id != self.bot.user.id:
+                nickname, reason, afk_since, msg_id = afk_dict[mention.id]
+                time_diff = datetime.utcnow() - afk_since
+                minutes, seconds = divmod(time_diff.seconds, 60)
+                hours, minutes = divmod(minutes, 60)
+                if hours > 0:
+                    afk_time = f"{hours} hours, {minutes} minutes"
+                elif minutes > 0:
+                    afk_time = f"{minutes} minutes, {seconds} seconds"
+                else:
+                    afk_time = f"{seconds} seconds"
+                embed = discord.Embed(title="AFK", description=f"{mention.mention} is AFK: {reason}\nHas been AFK for: {afk_time}", color=discord.Color.red())
+                await message.channel.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(Utilities(bot))
