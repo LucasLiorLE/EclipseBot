@@ -2,8 +2,6 @@ from discord.ext import commands
 import discord
 import json 
 import os
-import humanize
-import datetime
 
 def load_help_data():
     dir_path = os.path.dirname(os.path.abspath(__file__))
