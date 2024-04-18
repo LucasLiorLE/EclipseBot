@@ -8,8 +8,7 @@ from cogs import info, moderation, fun, utilities
 
 
 class Preferences:
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         with open("Storage/preferences.json", "r") as f:
             self.data = json.load(f)
         
@@ -20,6 +19,14 @@ class Preferences:
     def get_logs(self, guild):
         guild_id = str(guild.id)
         return self.data.get(guild_id, {}).get("logs", None)
+
+    def set_logs(self, guild, channel_id):
+        guild_id = str(guild.id)
+        self.data[guild_id]["logs"] = channel_id
+
+    def save_preferences(self):
+        with open("Storage/preferences.json", "w") as f:
+            json.dump(self.data, f, indent=4)
 
 
 class Secrets:
@@ -63,7 +70,7 @@ class Bot(commands.Bot):
     def __init__(self, secrets):
         super().__init__(command_prefix=None, intents=discord.Intents.all(), help_command=None)
         self.secrets = secrets
-        self.preferences = Preferences(self)
+        self.preferences = Preferences()
         self.status_manager = StatusManager(self)
 
     async def load_cogs(self):
@@ -75,20 +82,21 @@ class Bot(commands.Bot):
 
     async def on_ready(self):
         print(f"Bot is online as {self.user} (ID: {self.user.id})")
+        
+        print("Currently in the following servers:")
+        for guild in self.guilds:
+            print(f"- {guild.name} (ID: {guild.id})")
+        
         print(f'Currently in {len(self.guilds)} server(s)!')
-    
         self.loop.create_task(self.status_manager.change_status())
-        self.loop.create_task(self.load_cogs())  
+        self.loop.create_task(self.load_cogs())
 
     async def on_guild_join(self, guild: discord.Guild):
-        with open("Storage/preferences.json", "r+") as f:
-            data = json.load(f)
-            data[str(guild.id)] = {
-                "prefix": ".",
-                "logs": None
-            }
-            f.seek(0)
-            json.dump(data, f, indent=4)
+        self.preferences.data[str(guild.id)] = {
+            "prefix": ".",
+            "logs": None
+        }
+        self.preferences.save_preferences()
 
     async def on_message_edit(self, before, after):
         log_channel = self.get_channel(self.preferences.get_logs(before.guild))
@@ -96,6 +104,17 @@ class Bot(commands.Bot):
         if log_channel is None:
             return
 
+        await log_channel.send(embed=self.create_edit_embed(before, after))
+
+    async def on_message_delete(self, message):
+        log_channel = self.get_channel(self.preferences.get_logs(message.guild))
+        
+        if log_channel is None:
+            return
+
+        await log_channel.send(embed=self.create_delete_embed(message))
+
+    def create_edit_embed(self, before, after):
         embed = discord.Embed(title="Message Edited", color=discord.Color.gold())
         embed.add_field(name="User", value=before.author.mention, inline=False)
         embed.add_field(name="Channel", value=before.channel.mention, inline=False)
@@ -109,14 +128,9 @@ class Bot(commands.Bot):
         else:
             embed.set_footer(text=f"Edited by {before.author}")
 
-        await log_channel.send(embed=embed)
+        return embed
 
-    async def on_message_delete(self, message):
-        log_channel = self.get_channel(self.preferences.get_logs(message.guild))
-        
-        if log_channel is None:
-            return
-
+    def create_delete_embed(self, message):
         embed = discord.Embed(title="Message Deleted", color=discord.Color.red())
         embed.add_field(name="User", value=message.author.mention, inline=False)
         embed.add_field(name="Channel", value=message.channel.mention, inline=False)
@@ -128,7 +142,7 @@ class Bot(commands.Bot):
         else:
             embed.set_footer(text=f"Deleted by {message.author}")
 
-        await log_channel.send(embed=embed)
+        return embed
 
     async def process_commands(self, message):
         content = message.content.lower().strip()
@@ -147,11 +161,8 @@ class Bot(commands.Bot):
             
             if command == f"{self.command_prefix}prefix":
                 new_prefix = message.content.split()[1]
-                with open("Storage/preferences.json", "r+") as f:
-                    data = json.load(f)
-                    data[str(ctx.guild.id)]["prefix"] = new_prefix
-                    f.seek(0)
-                    json.dump(data, f, indent=4)
+                self.preferences.data[str(ctx.guild.id)]["prefix"] = new_prefix
+                self.preferences.save_preferences()
                     
                 self.command_prefix = new_prefix 
 
@@ -159,27 +170,27 @@ class Bot(commands.Bot):
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send(f":x: You don't have permission to use this command. Required permissions: {error.required_permissions}", delete_after=3)
+            await ctx.send(f"⚠️ You don't have permission to use this command. Required permissions: {error.required_permissions} ⚠️", delete_after=3)
         elif isinstance(error, commands.MemberNotFound):
-            await ctx.send(":x: The username you provided was not found. (Case sensitive)", delete_after=3)
+            await ctx.send("⚠️ The username you provided was not found. (Case sensitive) ⚠️", delete_after=3)
         elif isinstance(error, commands.BadArgument):
-            await ctx.send(":x: Invalid arguments provided", delete_after=3)
+            await ctx.send("⚠️ Invalid arguments provided ⚠️", delete_after=3)
         elif isinstance(error, TypeError):
-            await ctx.send(":x: Invalid time format. Use 'h' for hours or 'd' for days.", delete_after=3)
+            await ctx.send("⚠️ Invalid time format. Use 'h' for hours or 'd' for days. ⚠️", delete_after=3)
         elif isinstance(error, commands.CommandNotFound):
-            await ctx.send(":x: Command not found.", delete_after=3)
+            await ctx.send("⚠️ Command not found. ⚠️", delete_after=3)
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f":x: This command is on cooldown. Please try again in {error.retry_after:.2f} seconds.", delete_after=3)
+            await ctx.send(f"⚠️ This command is on cooldown. Please try again in {error.retry_after:.2f} seconds. ⚠️", delete_after=3)
         elif isinstance(error, commands.NoPrivateMessage):
-            await ctx.send(":x: This command cannot be used in private messages.", delete_after=3)
+            await ctx.send("⚠️ This command cannot be used in private messages. ⚠️", delete_after=3)
         elif isinstance(error, commands.CheckFailure):
-            await ctx.send(":x: You do not have the necessary permissions to use this command.", delete_after=3)
+            await ctx.send("⚠️ You do not have the necessary permissions to use this command. ⚠️", delete_after=3)
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(":x: Missing required argument.", delete_after=3)
+            await ctx.send("⚠️ Missing required argument. ⚠️", delete_after=3)
         elif isinstance(error, commands.CommandError):
-            await ctx.send(f":x: An error occurred while processing your command: {error}", delete_after=3)
+            await ctx.send(f"⚠️ An error occurred while processing your command: {error} ⚠️", delete_after=3)
         else:
-            await ctx.send(":x: An unknown error occurred while processing your command. Please try again later.", delete_after=3)
+            await ctx.send("⚠️ An unknown error occurred while processing your command. Please try again later. ⚠️", delete_after=3)
 
 if __name__ == "__main__":
     secrets = Secrets()
