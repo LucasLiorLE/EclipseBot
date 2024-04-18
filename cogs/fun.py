@@ -1,9 +1,24 @@
 import discord
 from discord.ext import commands
 import random
+import asyncpraw
 import requests
 from urllib.parse import quote
-import asyncpraw
+
+class BlackjackView(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.value = None
+
+    @discord.ui.button(label='Hit', style=discord.ButtonStyle.green)
+    async def hit(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = 'hit'
+        self.stop()
+
+    @discord.ui.button(label='Stand', style=discord.ButtonStyle.red)
+    async def stand(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = 'stand'
+        self.stop()
 
 class Fun(commands.Cog):
     def __init__(self, bot):
@@ -12,6 +27,50 @@ class Fun(commands.Cog):
                                client_secret='1H5GBR3N3RsoBWYKMizp0nta-66FYQ',
                                user_agent='discord-bot:Enl7jFbBrOoQTjoEfTMmDQ:v1.0 (by /u/LucasLiorLEE)')
         
+    @commands.command(aliases=['bj'])
+    async def blackjack(self, ctx):
+        deck = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11] * 4
+        random.shuffle(deck)
+
+        player = []
+        dealer = []
+
+        player.append(deck.pop())
+        dealer.append(deck.pop())
+        player.append(deck.pop())
+        dealer.append(deck.pop())
+
+        view = BlackjackView()
+        game_message = await ctx.reply(f"Your cards: {player}, total: {sum(player)}\nDealer's first card: {dealer[0]}\nWould you like to draw another card? Hit or Stand?", view=view)
+        
+        while sum(player) < 21:
+            view = BlackjackView()  
+            await game_message.edit(content=f"Your cards: {player}, total: {sum(player)}\nDealer's first card: {dealer[0]}\nWould you like to draw another card? Hit or Stand?", view=view)
+            await view.wait()
+            if view.value == 'hit':
+                player.append(deck.pop())
+            else:
+                break
+
+        if sum(player) > 21:
+            await game_message.edit(content=f"You busted! You lose.\nYour cards: {player}, total: {sum(player)}\nDealer's cards: {dealer}, total: {sum(dealer)}")
+        elif sum(player) == 21:
+            await game_message.edit(content=f"Blackjack! You win!\nYour cards: {player}, total: {sum(player)}\nDealer's cards: {dealer}, total: {sum(dealer)}")
+        else:
+            while sum(dealer) < 17:
+                dealer.append(deck.pop())
+            await game_message.edit(content=f"Your cards: {player}, total: {sum(player)}\nDealer's cards: {dealer}, total: {sum(dealer)}")
+
+            if sum(dealer) > 21:
+                await game_message.edit(content=f"Dealer busts! You win!\nYour cards: {player}, total: {sum(player)}\nDealer's cards: {dealer}, total: {sum(dealer)}")
+            elif sum(dealer) < sum(player):
+                await game_message.edit(content=f"You win!\nYour cards: {player}, total: {sum(player)}\nDealer's cards: {dealer}, total: {sum(dealer)}")
+            elif sum(dealer) > sum(player):
+                await game_message.edit(content=f"You lose!\nYour cards: {player}, total: {sum(player)}\nDealer's cards: {dealer}, total: {sum(dealer)}")
+            else:
+                await game_message.edit(content=f"It's a draw!\nYour cards: {player}, total: {sum(player)}\nDealer's cards: {dealer}, total: {sum(dealer)}")
+
+
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def say(self, ctx, channel_id: int, *, message: str = None):
@@ -22,11 +81,11 @@ class Fun(commands.Cog):
                 if channel:
                     await channel.send(message)
                 else:
-                    await ctx.send(f"Could not find channel with ID: {channel_id}")
+                    await ctx.reply(f"Could not find channel with ID: {channel_id}")
             except discord.HTTPException as e:
-                await ctx.send(f"An error occurred: {str(e)}")
+                await ctx.reply(f"An error occurred: {str(e)}")
         else:
-            sent_message = await ctx.send(f"{ctx.author.mention} forgot to add a message! Laugh at him!!!")
+            sent_message = await channel.send(f"{ctx.author.mention} forgot to add a message! Laugh at him!!!")
             await sent_message.add_reaction("😄")  
 
     @commands.command()
@@ -38,9 +97,9 @@ class Fun(commands.Cog):
                 await user.send(message)
                 await ctx.author.send(f"Successfully sent \'{message}\' to {user}!")
             except discord.HTTPException as e:
-                await ctx.send(f"An error occurred: {str(e)}")
+                await ctx.reply(f"An error occurred: {str(e)}")
         else:
-            await ctx.send(f"No message to send :(")
+            await ctx.reply(f"No message to send :(")
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -70,7 +129,7 @@ class Fun(commands.Cog):
         embed.add_field(name="Compatibility Score", value=f"{progress} {com}%")
         embed.add_field(name="Match", value=f"{description}")
         
-        await ctx.send(embed=embed)
+        await ctx.reply(embed=embed)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -88,7 +147,7 @@ class Fun(commands.Cog):
             else:
                 await a.edit(content="An error occurred while fetching the fact.")
         except Exception as e:
-            await ctx.send(f"An error occurred: {str(e)}")
+            await ctx.reply(f"An error occurred: {str(e)}")
 
 
     @commands.command()
@@ -110,7 +169,7 @@ class Fun(commands.Cog):
             else:
                 await a.edit(content="An error occurred while fetching the joke.")
         except Exception as e:
-            await ctx.send(f"An error occurred: {str(e)}")
+            await ctx.reply(f"An error occurred: {str(e)}")
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -130,7 +189,7 @@ class Fun(commands.Cog):
             else:
                 await a.edit(content="An error occurred while fetching the cat picture.")
         except Exception as e:
-            await ctx.send(f"An error occurred: {str(e)}")
+            await ctx.reply(f"An error occurred: {str(e)}")
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -150,7 +209,7 @@ class Fun(commands.Cog):
             else:
                 await a.edit(content="An error occurred while fetching the dog picture.")
         except Exception as e:
-            await ctx.send(f"An error occurred: {str(e)}")
+            await ctx.reply(f"An error occurred: {str(e)}")
 
 
     @commands.command()
@@ -169,7 +228,7 @@ class Fun(commands.Cog):
             else:
                 await a.edit(content="An error occurred while fetching the quote.")
         except Exception as e:
-            await ctx.send(f"An error occurred: {str(e)}")
+            await ctx.reply(f"An error occurred: {str(e)}")
 
 
     @commands.command()
@@ -209,7 +268,7 @@ class Fun(commands.Cog):
         choices = ['rock', 'paper', 'scissors']
         
         if choice.lower() not in choices:
-            await ctx.send("Invalid choice. Please choose 'rock', 'paper', or 'scissors'.")
+            await ctx.reply("Invalid choice. Please choose 'rock', 'paper', or 'scissors'.")
             return
         
         bot_choice = random.choice(choices)
@@ -223,7 +282,7 @@ class Fun(commands.Cog):
         else:
             result = "You lose!"
         
-        await ctx.send(f"You chose **{choice.capitalize()}** and the bot chose **{bot_choice.capitalize()}**. {result}")
+        await ctx.reply(f"You chose **{choice.capitalize()}** and the bot chose **{bot_choice.capitalize()}**. {result}")
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -234,7 +293,7 @@ class Fun(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def coinflip(self, ctx):
         result = random.choice(['Heads', 'Tails'])
-        await ctx.send(f"The coin landed on **{result}**!")
+        await ctx.reply(f"The coin landed on **{result}**!")
 
 def setup(bot):
     bot.add_cog(Fun(bot))
