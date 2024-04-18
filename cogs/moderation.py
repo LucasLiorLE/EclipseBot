@@ -4,6 +4,7 @@ import datetime
 from typing import Optional
 import re
 import json
+import os
 
 
 class Moderation(commands.Cog):
@@ -12,9 +13,11 @@ class Moderation(commands.Cog):
         self.modstats_file = "Storage/Logs/modstats.json"
         self.warns_file = "Storage/Logs/warns.json"
         self.preferences_file = "Storage/Logs/preferences.json"
+        self.notes_file = "Storage/Logs/notes.json"
         self.load_modstats()
         self.load_warns()
         self.load_preferences()
+        self.load_notes()
 
     def load_preferences(self):
         try:
@@ -23,20 +26,19 @@ class Moderation(commands.Cog):
         except (json.JSONDecodeError, FileNotFoundError):
             self.preferences = {}
 
-    def save_preferences(self):
-        with open(self.preferences_file, 'w') as f:
-            json.dump(self.preferences, f, indent=4)
-
     def load_warns(self):
         try:
             with open(self.warns_file, 'r') as f:
                 self.warns = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
             self.warns = {}
-
-    def save_warns(self):
-        with open(self.warns_file, 'w') as f:
-            json.dump(self.warns, f, indent=4)
+    
+    def load_notes(self):
+        try:
+            with open(self.notes_file, 'r') as f:
+                self.notes = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            self.notes = {}
 
     def load_modstats(self):
         try:
@@ -44,6 +46,18 @@ class Moderation(commands.Cog):
                 self.modstats = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
             self.modstats = {}
+
+    def save_preferences(self):
+        with open(self.preferences_file, 'w') as f:
+            json.dump(self.preferences, f, indent=4)
+
+    def save_warns(self):
+        with open(self.warns_file, 'w') as f:
+            json.dump(self.warns, f, indent=4)
+
+    def save_notes(self):
+        with open(self.notes_file, 'w') as f:
+            json.dump(self.notes, f, indent=4)
 
     def save_modstats(self):
         with open(self.modstats_file, 'w') as f:
@@ -59,9 +73,10 @@ class Moderation(commands.Cog):
             self.warns[str(guild_id)] = {}
         return self.warns[str(guild_id)]
 
-    async def send_embed(self, ctx, title, description, color=0xFF5733, delete_after=None):
-        embed = discord.Embed(title=title, description=description, color=color)
-        await ctx.send(embed=embed, delete_after=delete_after)
+    def get_guild_notes(self, guild_id):
+        if str(guild_id) not in self.notes:
+            self.notes[str(guild_id)] = {}
+        return self.notes[str(guild_id)]
 
     async def update_modstats(self, ctx, author_id, action):
         guild_id = ctx.guild.id
@@ -87,8 +102,74 @@ class Moderation(commands.Cog):
         if str(author_id) in stats:
             return stats[str(author_id)]
         return None
+    
+    async def send_embed(self, ctx, title, description, color=0xFF5733, delete_after=None):
+        embed = discord.Embed(title=title, description=description, color=color)
+        await ctx.send(embed=embed, delete_after=delete_after)
+
+    @commands.command()
+    @commands.has_permissions(manage_messages=True)
+    async def note(self, ctx, member: discord.Member, *, note: str = None):
+        try:
+            guild_id = ctx.guild.id
+            notes = self.get_guild_notes(guild_id)
+            user_key = str(member.id)
+            
+            if user_key not in notes:
+                notes[user_key] = []
+            
+            notes[user_key].append({
+                "Moderator": str(ctx.author),
+                "Note": note 
+            })
+            
+            self.save_notes()
+            await self.send_embed(ctx, f"Added note: {note} to {member}")
+        except Exception as e:
+            await self.send_embed(ctx, "Note Member Error", f"An error occurred while trying to note the member: {str(e)}")
+
+    @commands.command()
+    @commands.has_permissions(manage_messages=True)
+    async def notes(self, ctx, user: Optional[discord.User] = None):
+        user = user or ctx.author
+        user_key = str(user.id)
+        user_notes = self.notes.get(user_key, [])
+
+        if not user_notes:
+            await ctx.send(f"No notes found for <@{user.id}>.")
+            return
+
+        embed = discord.Embed(title=f"Warnings for {user.display_name}", color=0x7289da)
+        
+        for i, note in enumerate(user_notes, 1):
+            moderator = ctx.guild.get_member(int(note["moderator"])) or note["moderator"]
+            notes = note["note"]
+            embed.add_field(name=f"Note {i} by {moderator}", value=f"Note: {notes}", inline=False)
+            embed.add_footer(text="Use delnote or delete_ntoe to remove notes.")
+
+        await ctx.send(embed=embed)
+
+    @commands.command(aliases=['delnote'])
+    @commands.has_permissions(manage_messages=True)
+    async def delete_note(self, ctx, user: discord.Member, note_index: int):
+        user_key = str(user.id)
+        user_notes = self.warns.get(user_key, [])
+
+        if not user_notes:
+            await ctx.send(f"No notes found for {user.mention}.")
+            return
+
+        if note_index <= 0 or note_index > len(user_notes):
+            await ctx.send(f"Invalid note index. Please provide a valid note index between 1 and {len(user_notes)}.")
+            return
+
+        removed_note = user_notes.pop(note_index - 1)
+        self.save_notes()
+
+        await ctx.send(f"Removed note {note_index} for {user.mention}. Reason: {removed_note['reason']}")
 
     @commands.command(aliases=['ms'])
+    @commands.has_permissions(manage_messages=True)
     async def modstats(self, ctx, user: Optional[discord.User] = None):
         user = user or ctx.author
         guild_id = ctx.guild.id
@@ -105,8 +186,6 @@ class Moderation(commands.Cog):
             await ctx.send(embed=embed)
         else:
             await ctx.send("User has no moderation stats.")
-
-
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
@@ -182,12 +261,22 @@ class Moderation(commands.Cog):
             await self.send_embed(ctx, "Mute Member Error", f"An error occurred while trying to mute the member: {str(e)}")
 
     @commands.command()
-    @commands.has_permissions(manage_channels=True)
+    @commands.has_permissions(manage_messages=True)
     async def logs(self, ctx, channel: discord.TextChannel):
         try:
-            guild_id = ctx.guild.id
-            self.preferences.data[str(guild_id)]["logs"] = channel.id
-            self.preferences.save_preferences()
+            file_path = os.path.join(os.path.dirname(__file__), '..', 'Storage', 'preferences.json')
+            
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+            
+            guild_id = str(ctx.guild.id)
+            if guild_id not in data:
+                data[guild_id] = {}
+            data[guild_id]["logs"] = channel.id
+            
+            with open(file_path, 'w') as f:
+                json.dump(data, f, indent=4)
+            
             await self.send_embed(ctx, "Logging Channel Updated", f"Logging channel has been set to {channel.mention}.")
         except Exception as e:
             await self.send_embed(ctx, "Logs Error", f"An error occurred while setting the logging channel: {str(e)}")
@@ -218,6 +307,7 @@ class Moderation(commands.Cog):
 
 
     @commands.command(aliases=['warns'])
+    @commands.has_permissions(manage_messages=True)
     async def warnings(self, ctx, user: Optional[discord.User] = None):
         user = user or ctx.author
         user_key = str(user.id)
