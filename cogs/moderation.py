@@ -1,6 +1,7 @@
 from discord.ext import commands
 import discord
 import datetime
+import time
 from typing import Optional
 import re
 import json
@@ -105,68 +106,99 @@ class Moderation(commands.Cog):
     
     async def send_embed(self, ctx, title, description, color=0xFF5733, delete_after=None):
         embed = discord.Embed(title=title, description=description, color=color)
-        await ctx.send(embed=embed, delete_after=delete_after)
+        await ctx.reply(embed=embed, delete_after=delete_after)
 
-    @commands.command()
-    @commands.has_permissions(manage_messages=True)
-    async def note(self, ctx, member: discord.Member, *, note: str = None):
-        try:
-            guild_id = ctx.guild.id
-            notes = self.get_guild_notes(guild_id)
-            user_key = str(member.id)
-            
-            if user_key not in notes:
-                notes[user_key] = []
-            
-            notes[user_key].append({
-                "Moderator": str(ctx.author),
-                "Note": note 
-            })
-            
+    @commands.command(aliases=['delete_note', 'deletenote', 'removenote', 'remove_note'])
+    @commands.has_permissions(kick_members=True)
+    async def delnote(self, ctx, member: discord.Member, note_id: int):
+        guild_id = ctx.guild.id
+        notes = self.get_guild_notes(guild_id)
+        if str(member.id) in notes and note_id < len(notes[str(member.id)]):
+            del notes[str(member.id)][note_id]
             self.save_notes()
-            await self.send_embed(ctx, f"Added note: {note} to {member}")
-        except Exception as e:
-            await self.send_embed(ctx, "Note Member Error", f"An error occurred while trying to note the member: {str(e)}")
+            await self.send_embed(ctx, "Note Deleted", f"Note {note_id} has been deleted from {member.name}.", color=0xFF0000)
+        else:
+            await self.send_embed(ctx, "Error", "Invalid note ID.", color=0xFF0000)
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True)
-    async def notes(self, ctx, user: Optional[discord.User] = None):
-        user = user or ctx.author
-        user_key = str(user.id)
-        user_notes = self.notes.get(user_key, [])
+    @commands.has_permissions(kick_members=True)
+    async def warn(self, ctx, member: discord.Member, *, reason=None):
+        guild_id = ctx.guild.id
+        warns = self.get_guild_warns(guild_id)
+        if str(member.id) not in warns:
+            warns[str(member.id)] = []
+        warn = {
+            "Moderator": ctx.author.id,
+            "Reason": reason,
+            "Date": int(time.time())
+        }
+        warns[str(member.id)].append(warn)
+        self.save_warns()
+        await self.update_modstats(ctx, ctx.author.id, "warn")
+        await self.send_embed(ctx, "Warned", f"{member.name} has been warned.", color=0xFFA500)
 
-        if not user_notes:
-            await ctx.send(f"No notes found for <@{user.id}>.")
-            return
-
-        embed = discord.Embed(title=f"Warnings for {user.display_name}", color=0x7289da)
-        
-        for i, note in enumerate(user_notes, 1):
-            moderator = ctx.guild.get_member(int(note["moderator"])) or note["moderator"]
-            notes = note["note"]
-            embed.add_field(name=f"Note {i} by {moderator}", value=f"Note: {notes}", inline=False)
-            embed.add_footer(text="Use delnote or delete_ntoe to remove notes.")
-
-        await ctx.send(embed=embed)
-
-    @commands.command(aliases=['delnote'])
-    @commands.has_permissions(manage_messages=True)
-    async def delete_note(self, ctx, user: discord.Member, note_index: int):
-        user_key = str(user.id)
-        user_notes = self.warns.get(user_key, [])
-
-        if not user_notes:
-            await ctx.send(f"No notes found for {user.mention}.")
-            return
-
-        if note_index <= 0 or note_index > len(user_notes):
-            await ctx.send(f"Invalid note index. Please provide a valid note index between 1 and {len(user_notes)}.")
-            return
-
-        removed_note = user_notes.pop(note_index - 1)
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def note(self, ctx, member: discord.Member, *, reason=None):
+        guild_id = ctx.guild.id
+        notes = self.get_guild_notes(guild_id)
+        if str(member.id) not in notes:
+            notes[str(member.id)] = []
+        note = {
+            "Moderator": ctx.author.id,
+            "Reason": reason,
+            "Date": int(time.time())
+        }
+        notes[str(member.id)].append(note)
         self.save_notes()
+        await self.send_embed(ctx, "Note Added", f"A note has been added to {member.name}.", color=0x00FF00)
 
-        await ctx.send(f"Removed note {note_index} for {user.mention}. Reason: {removed_note['reason']}")
+
+    @commands.command(aliases=['delete_warn', 'deletewarn', 'removewarn', 'remove_warn'])
+    @commands.has_permissions(kick_members=True)
+    async def delwarn(self, ctx, member: discord.Member, warn_id: int):
+        guild_id = ctx.guild.id
+        warns = self.get_guild_warns(guild_id)
+        if str(member.id) in warns and warn_id < len(warns[str(member.id)]):
+            del warns[str(member.id)][warn_id]
+            self.save_warns()
+            await self.send_embed(ctx, "Warn Deleted", f"Warn {warn_id} has been deleted from {member.name}.", color=0xFF0000)
+        else:
+            await self.send_embed(ctx, "Error", "Invalid warn ID.", color=0xFF0000)
+
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def warns(self, ctx, member: discord.Member):
+        guild_id = ctx.guild.id
+        warns = self.get_guild_warns(guild_id)
+        if str(member.id) in warns and warns[str(member.id)]:
+            embed = discord.Embed(title=f"Warns for {member.name}", color=0xFFA500)
+            for i, warn in enumerate(warns[str(member.id)]):
+                if "Moderator" in warn and "Reason" in warn and "Date" in warn:
+                    moderator = self.bot.get_user(warn["Moderator"])
+                    date = int(warn["Date"])
+                    embed.add_field(name=f"Warn {i+1}", value=f"Moderator: {moderator}\nReason: {warn['Reason']}\nDate: <t:{date}:R>", inline=False)
+            await ctx.reply(embed=embed)
+        else:
+            await ctx.reply(f"{member.name} has no warns.")
+
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def notes(self, ctx, member: discord.Member):
+        guild_id = ctx.guild.id
+        notes = self.get_guild_notes(guild_id)
+        if str(member.id) in notes and notes[str(member.id)]:
+            embed = discord.Embed(title=f"Notes for {member.name}", color=0x00FF00)
+            for i, note in enumerate(notes[str(member.id)]):
+                if "Moderator" in note and "Reason" in note and "Date" in note:
+                    moderator = self.bot.get_user(note["Moderator"])
+                    date = int(note["Date"])
+                    embed.add_field(name=f"Note {i+1}", value=f"Moderator: {moderator}\nReason: {note['Reason']}\nDate: <t:{date}:R>", inline=False)
+            await ctx.reply(embed=embed)
+        else:
+            await ctx.reply(f"{member.name} has no notes.")
+
+
 
     @commands.command(aliases=['ms'])
     @commands.has_permissions(manage_messages=True)
@@ -183,9 +215,9 @@ class Moderation(commands.Cog):
             embed.add_field(name="Warns", value=user_stats["warns"])
             embed.add_field(name="Total Actions", value=user_stats["total"])
             
-            await ctx.send(embed=embed)
+            await ctx.reply(embed=embed)
         else:
-            await ctx.send("User has no moderation stats.")
+            await ctx.reply("User has no moderation stats.")
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
@@ -260,7 +292,7 @@ class Moderation(commands.Cog):
         except Exception as e:
             await self.send_embed(ctx, "Mute Member Error", f"An error occurred while trying to mute the member: {str(e)}")
 
-    @commands.command()
+    @commands.command(aliases=['log'])
     @commands.has_permissions(manage_messages=True)
     async def logs(self, ctx, channel: discord.TextChannel):
         try:
@@ -282,72 +314,6 @@ class Moderation(commands.Cog):
             await self.send_embed(ctx, "Logs Error", f"An error occurred while setting the logging channel: {str(e)}")
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True)
-    async def warn(self, ctx, member: discord.Member, *, reason: str = None):
-        try:
-            guild_id = ctx.guild.id
-            warns = self.get_guild_warns(guild_id)
-            user_key = str(member.id)
-            
-            if user_key not in warns:
-                warns[user_key] = []
-            
-            warns[user_key].append({
-                "moderator": str(ctx.author),
-                "reason": reason or "Reason not provided."
-            })
-            
-            self.save_warns()
-            await self.send_embed(ctx, "Warn Member", f"{member.mention} has been warned. Reason: {reason or 'Reason not provided.'}")
-
-            await self.update_modstats(ctx, ctx.author.id, "warn")
-
-        except Exception as e:
-            await self.send_embed(ctx, "Warn Member Error", f"An error occurred while trying to warn the member: {str(e)}")
-
-
-    @commands.command(aliases=['warns'])
-    @commands.has_permissions(manage_messages=True)
-    async def warnings(self, ctx, user: Optional[discord.User] = None):
-        user = user or ctx.author
-        user_key = str(user.id)
-        user_warns = self.warns.get(user_key, [])
-
-        if not user_warns:
-            await ctx.send(f"No warnings found for <@{user.id}>.")
-            return
-
-        embed = discord.Embed(title=f"Warnings for {user.display_name}", color=0x7289da)
-        
-        for i, warn in enumerate(user_warns, 1):
-            moderator = ctx.guild.get_member(int(warn["moderator"])) or warn["moderator"]
-            reason = warn["reason"]
-            embed.add_field(name=f"Warning {i} by {moderator}", value=f"Reason: {reason}", inline=False)
-            embed.add_footer(text="Use delwarn or delete_warn to remove warns.")
-
-        await ctx.send(embed=embed)
-
-
-    @commands.command(aliases=['delwarn'])
-    @commands.has_permissions(manage_messages=True)
-    async def delete_warn(self, ctx, user: discord.Member, warn_index: int):
-        user_key = str(user.id)
-        user_warns = self.warns.get(user_key, [])
-
-        if not user_warns:
-            await ctx.send(f"No warnings found for {user.mention}.")
-            return
-
-        if warn_index <= 0 or warn_index > len(user_warns):
-            await ctx.send(f"Invalid warning index. Please provide a valid warning index between 1 and {len(user_warns)}.")
-            return
-
-        removed_warn = user_warns.pop(warn_index - 1)
-        self.save_warns()
-
-        await ctx.send(f"Removed warning {warn_index} for {user.mention}. Reason: {removed_warn['reason']}")
-
-    @commands.command()
     @commands.has_permissions(manage_roles=True)
     async def unmute(self, ctx, member: discord.Member, *, reason=None):
         try:
@@ -357,7 +323,7 @@ class Moderation(commands.Cog):
         except Exception as e:
             await self.send_embed(ctx, "Unmute Member Error", f"An error occurred while trying to unmute the member: {str(e)}")
 
-    @commands.command()
+    @commands.command(aliases=['sm'])
     @commands.has_permissions(manage_channels=True)
     async def slowmode(self, ctx, delay: Optional[int] = None):
         try:
