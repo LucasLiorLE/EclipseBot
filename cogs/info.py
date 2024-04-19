@@ -58,7 +58,7 @@ class Info(commands.Cog):
     async def info(self, ctx):
         embed = discord.Embed(title="Bot Info", description="This bot is developed by LucasLiorLE.", color=0x808080)
         
-        embed.add_field(name="Version", value="1.44.3-a.5")
+        embed.add_field(name="Version", value="1.44.6")
         embed.add_field(name="Source Code", value="[GitHub Repository](https://github.com/LucasLiorLE)")
         embed.add_field(name="Bot Created", value=f"<t:1712847600:F>\n<t:1712847600:R>", inline=False)
         embed.add_field(name="Server Count", value=len(self.bot.guilds), inline=True)
@@ -70,7 +70,7 @@ class Info(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['si'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def serverinfo(self, ctx):
         guild = ctx.guild
@@ -82,7 +82,7 @@ class Info(commands.Cog):
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(aliases=['ui'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def userinfo(self, ctx, member: discord.Member = None):
         member = member or ctx.author
