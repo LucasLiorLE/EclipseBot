@@ -3,6 +3,10 @@
 
 # Eclipse Bot
 
+<a href="https://top.gg/bot/1227399883938463744"> <img src="https://top.gg/api/widget/1227399883938463744.svg"> </a> 
+
+<a href="https://www.buymeacoffee.com/LucasLiorLE"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=LucasLiorLE&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
+
 ## Table of Contents
 - [Utilities](#utilities)
 - [Moderation](#moderation)
@@ -179,13 +183,14 @@
 ---
 
 ## Links <a name="links"></a>
-- **Bot invite:** [Invite the bot to your Discord server!](https://discord.com/oauth2/authorize?client_id=1227399883938463744&permissions=1531306699975&scope=bot)
 
-- **Discord:** [Join our Discord server!](https://discord.gg/z6JsMzH6XQ)
-  
-- **Buy me a coffee:** [Support the bot's development](https://www.buymeacoffee.com/lucasliorle)
-  
-- **GitHub:** [Check out the bot's GitHub repository](https://github.com/LucasLiorLE/EclipseBot)
+**Bot invite:** [Invite the bot to your Discord server!](https://discord.com/oauth2/authorize?client_id=1227399883938463744&permissions=1531306699975&scope=bot)
+
+**Discord:** [Join our Discord server!](https://discord.gg/z6JsMzH6XQ)
+    
+**GitHub:** [Check out the bot's GitHub repository](https://github.com/LucasLiorLE/EclipseBot)
+
+<a href="https://www.buymeacoffee.com/LucasLiorLE"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=LucasLiorLE&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
 
 ---
 
