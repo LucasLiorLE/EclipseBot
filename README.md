@@ -31,6 +31,12 @@
 ### `translate {language} | {message}`
 - **Description:** Translates `{message}` into `{language}`.
 
+### `afk (reason)`
+- **Description:** Sets the user as AFK with an optional `(reason)`.
+
+### `prefix {prefix}`
+- **Description:** Changes your old prefix to `{prefix}`.
+
 </details>
 
 ---
@@ -67,6 +73,15 @@
 ### `delete_warn {member} {index}`
 - **Description:** Delete the `{index}` (starts at 1) warn of `{member}`.
 
+### `note {member} {note}`
+- **Description:** Notes `{member}` for `{note}`.
+
+### `notes {member}`
+- **Description:** Check the notes `{member}` has.
+
+### `delete_note {member} {index}`
+- **Description:** Delete's `{member}'s` `{index}` (starts at 1) warn.
+
 ### `modstats (username)`
 - **Description:** Checks the modstats of `(username)`.
 
@@ -81,6 +96,9 @@
 
 ### `nick {username} {nickname}`
 - **Description:** Sets `{username}'s` nickname to `{nickname}`.
+
+### `logs {channelid}`
+- **Description:** Sets the logs channel ID to `{channelid}`.
 
 </details>
 
@@ -134,7 +152,9 @@
 - **Description:** Tells you a fun fact!
 
 ### `joke`
-- **Description:** Tells you a random joke!
+- **Description:** Tells you a random
+
+ joke!
 
 ### `dog`
 - **Description:** Shows a cute dog.
@@ -155,7 +175,6 @@
 - **Description:** Play the computer in a round of RPS.
 
 </details>
-
 
 ---
 
