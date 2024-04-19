@@ -153,7 +153,7 @@ class Utilities(commands.Cog):
                 return datetime.timedelta(days=amount)
         
         return None
-
+    
     @tasks.loop(minutes=1)
     async def check_reminders(self):
         now = datetime.datetime.utcnow()
