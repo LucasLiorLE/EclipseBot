@@ -68,10 +68,15 @@ class StatusManager:
 
 class Bot(commands.Bot):
     def __init__(self, secrets):
-        super().__init__(command_prefix=None, intents=discord.Intents.all(), help_command=None)
+        super().__init__(command_prefix=self.get_prefix, intents=discord.Intents.all(), help_command=None)
         self.secrets = secrets
         self.preferences = Preferences()
         self.status_manager = StatusManager(self)
+
+    async def get_prefix(self, message):
+        if message.guild is None:
+            return '.'
+        return self.preferences.get_prefix(message.guild)
 
     async def load_cogs(self):
         await self.wait_until_ready()
@@ -151,46 +156,44 @@ class Bot(commands.Bot):
             return
 
         command = content.split()[0]
-        self.command_prefix = self.preferences.get_prefix(message)
 
         if message.guild is None:
             return
 
-        if command.startswith(self.command_prefix):
+        prefix = await self.get_prefix(message)
+        if command.startswith(prefix):
             ctx = await self.get_context(message, cls=commands.Context)
             
-            if command == f"{self.command_prefix}prefix":
+            if command == f"{prefix}prefix":
                 new_prefix = message.content.split()[1]
                 self.preferences.data[str(ctx.guild.id)]["prefix"] = new_prefix
                 self.preferences.save_preferences()
-                    
-                self.command_prefix = new_prefix 
 
             await self.invoke(ctx)
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send(f"⚠️ You don't have permission to use this command. Required permissions: {error.required_permissions} ⚠️", delete_after=3)
+            await ctx.reply(f"⚠️ You don't have permission to use this command. Required permissions: {error.missing_permissions} ⚠️", delete_after=3)
         elif isinstance(error, commands.MemberNotFound):
-            await ctx.send("⚠️ The username you provided was not found. (Case sensitive) ⚠️", delete_after=3)
+            await ctx.reply("⚠️ The username you provided was not found. (Case sensitive) ⚠️", delete_after=3)
         elif isinstance(error, commands.BadArgument):
-            await ctx.send("⚠️ Invalid arguments provided ⚠️", delete_after=3)
+            await ctx.reply("⚠️ Invalid arguments provided ⚠️", delete_after=3)
         elif isinstance(error, TypeError):
-            await ctx.send("⚠️ Invalid time format. Use 'h' for hours or 'd' for days. ⚠️", delete_after=3)
+            await ctx.reply("⚠️ Invalid time format. Use 'h' for hours or 'd' for days. ⚠️", delete_after=3)
         elif isinstance(error, commands.CommandNotFound):
-            await ctx.send("⚠️ Command not found. ⚠️", delete_after=3)
+            await ctx.reply("⚠️ Command not found. ⚠️", delete_after=3)
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f"⚠️ This command is on cooldown. Please try again in {error.retry_after:.2f} seconds. ⚠️", delete_after=3)
+            await ctx.reply(f"⚠️ This command is on cooldown. Please try again in {error.retry_after:.2f} seconds. ⚠️", delete_after=3)
         elif isinstance(error, commands.NoPrivateMessage):
-            await ctx.send("⚠️ This command cannot be used in private messages. ⚠️", delete_after=3)
+            await ctx.reply("⚠️ This command cannot be used in private messages. ⚠️", delete_after=3)
         elif isinstance(error, commands.CheckFailure):
-            await ctx.send("⚠️ You do not have the necessary permissions to use this command. ⚠️", delete_after=3)
+            await ctx.reply("⚠️ You do not have the necessary permissions to use this command. ⚠️", delete_after=3)
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send("⚠️ Missing required argument. ⚠️", delete_after=3)
+            await ctx.reply("⚠️ Missing required argument. ⚠️", delete_after=3)
         elif isinstance(error, commands.CommandError):
-            await ctx.send(f"⚠️ An error occurred while processing your command: {error} ⚠️", delete_after=3)
+            await ctx.reply(f"⚠️ An error occurred while processing your command: {error} ⚠️", delete_after=3)
         else:
-            await ctx.send("⚠️ An unknown error occurred while processing your command. Please try again later. ⚠️", delete_after=3)
+            await ctx.reply("⚠️ An unknown error occurred while processing your command. Please try again later. ⚠️", delete_after=3)
 
 if __name__ == "__main__":
     secrets = Secrets()
