@@ -223,7 +223,7 @@ class Fun(commands.Cog):
             if response.status_code == 200:
                 data = response.json()[0]
                 
-                embed = discord.Embed(title=data['q'], description=f"- {data['a']}", color=0x66CDAA)
+                embed = discord.Embed(title=data['q'], description=f"-{data['a']}", color=0x66CDAA)
                 await a.edit(content=None, embed=embed)
             else:
                 await a.edit(content="An error occurred while fetching the quote.")
