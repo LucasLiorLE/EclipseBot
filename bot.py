@@ -31,7 +31,7 @@ class Preferences:
 
 class Secrets:
     def __init__(self):
-        with open("secrets.json") as f:
+        with open("secrets.env") as f:
             self.data = json.load(f)
         self.token = self.data["token"]
 
