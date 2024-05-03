@@ -1,5 +1,5 @@
-aiohttp==3.8.1
-asyncpraw==7.5.1
-discord.py==2.0.0
-googletrans==4.0.0-rc1
-humanize==3.9.0
+aiohttp==latest
+asyncpraw==latest
+discord.py==latest
+googletrans==latest
+humanize==latest
