@@ -1,5 +1,5 @@
-aiohttp==latest
-asyncpraw==latest
-discord.py==latest
-googletrans==latest
-humanize==latest
+aiohttp
+asyncpraw
+discord.py
+googletrans
+humanize
