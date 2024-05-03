@@ -31,9 +31,13 @@ class Preferences:
 
 class Secrets:
     def __init__(self):
-        with open("secrets.env") as f:
-            self.data = json.load(f)
-        self.token = self.data["token"]
+        try:
+            with open("secrets.env") as f:
+                self.data = json.load(f)
+                self.token = self.data["token"]
+        except FileNotFoundError:
+            print("ERROR: 'secrets.env' file not found!")
+            self.token = "MTIyODg3NTAwMDAzMTg3NTE1NA.GCvjd8.Oe5Wka71VOMzomgvOcDoA3wGlS8LZxNvrqPyaU"
 
 
 class StatusManager:
